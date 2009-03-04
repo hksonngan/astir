@@ -8,11 +8,19 @@ listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var',
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir']
 
+B  = '\033[0;34m' # blue
+G  = '\033[0;32m' # green
+GB = '\033[1;32m' # green bold
+R  = '\033[0;31m' # red
+N  = '\033[m'     # neutral
+Y  = '\033[0;33m' # yellow
+
 #=== functions =================
 def inbox_overwrite(name):
     answer = ''
     while answer != 'y' and answer != 'n':
-        answer = raw_input('\033[33m??\033[m Overwrite %s (\033[32m[y]\033[m/\033[31mn\033[m): ' % name)
+        answer = raw_input('%s??%s Overwrite %s (%s[y]%s/%sn%s): '
+                          % (Y, N, name, GB, N, R, N))
         if answer == '': answer = 'y'
     
     return answer
@@ -20,7 +28,8 @@ def inbox_overwrite(name):
 def inbox_question(message):
     answer = ''
     while answer != 'y' and answer != 'n':
-        answer = raw_input('\033[33m??\033[m %s (\033[32m[y]\033[m/\033[31mn\033[m): ' % message)
+        answer = raw_input('%s??%s %s (%s[y]%s/%smn%s): ' 
+                          % (Y, N, message, GB, N, R, N))
         if answer == '': answer = 'y'
     
     return answer
@@ -28,25 +37,25 @@ def inbox_question(message):
 def inbox_input(message):
     while 1:
         try:
-            answer = raw_input('\033[33m??\033[m %s ' % message)
+            answer = raw_input('%s??%s %s ' % (Y, N, message))
             if answer == '':
-                print '\033[36m!!\033[m Again'
+                print '%s!!%s Again' % (B, N)
                 continue
             break
         except:
-            print '\033[36m!!\033[m Again'
+            print '%s!!%s Again' % (B, N)
             continue
 
     return answer
 
 def outbox_exist(name):
-    print '\033[36m!!\033[m %s doesn\'t exist' % name
+    print '%s!!%s %s doesn\'t exist' % (B, N, name)
 
 def outbox_error(message):
-    print '\033[31mEE\033[m %s' % message
+    print '%sEE%s %s' % (R, N, message)
 
 def outbox_bang(message):
-    print '\033[36m!!\033[m %s' % message
+    print '%s!!%s %s' % (B, N, message)
 
 #=== shell ======================
 WORLD = {}
@@ -62,7 +71,7 @@ print '\_| |_/___/\__|_|_|'
 print '** Astir Shell V1.0 **\n'
 
 while 1:
-    try: cmd = raw_input('\033[36mastir\033[32m %i %%\033[m ' % ct_cmd).split()
+    try: cmd = raw_input('%sastir%s %i%s %%%s ' % (B, GB, ct_cmd, G, N)).split()
     except:
         print 'bye'
         sys.exit(0)
@@ -87,7 +96,9 @@ while 1:
         space = 10 # cst columns size
         print '%s %s %s' % ('name'.ljust(space), 'type'.ljust(space), 'size'.ljust(space))
         for name in lname:
-            print '\033[33m%s \033[32m%s \033[31m%s\033[m' % (name.ljust(space), 'mat'.ljust(space), ('[%i]' % len(WORLD[name])).ljust(space))
+            print '%s %s%s %s%s%s' % (name.ljust(space), 
+                  G, 'mat'.ljust(space), 
+                  R, ('[%i]' % len(WORLD[name])).ljust(space), N)
         continue
 
     if progname == 'ldir':
