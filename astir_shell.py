@@ -28,7 +28,7 @@ def inbox_overwrite(name):
 def inbox_question(message):
     answer = ''
     while answer != 'y' and answer != 'n':
-        answer = raw_input('%s??%s %s (%s[y]%s/%smn%s): ' 
+        answer = raw_input('%s??%s %s (%s[y]%s/%sn%s): ' 
                           % (Y, N, message, GB, N, R, N))
         if answer == '': answer = 'y'
     
@@ -112,14 +112,25 @@ while 1:
                   R, ('[%i]' % len(WORLD[name][1])).ljust(space), N)
             elif kind == 'mat':
                 mode = len(WORLD[name][1])
-                w    = len(WORLD[name][1][0][0])
                 h    = len(WORLD[name][1][0])
+                w    = len(WORLD[name][1][0][0])
                 if   mode == 1: mode = 'L'
                 elif mode == 3: mode = 'RGB'
                 else:           mode = 'RGBA'
                 print '%s %s%s %s%s%s' % (name.ljust(space), 
                   G, 'mat'.ljust(space), 
                   R, '[%ix%i %s]' % (w, h, mode), N)
+            elif kind == 'seq':
+                nbm  = len(WORLD[name][1])
+                mode = len(WORLD[name][1][0])
+                h    = len(WORLD[name][1][0][0])
+                w    = len(WORLD[name][1][0][0][0])
+                if   mode == 1: mode = 'L'
+                elif mode == 3: mode = 'RGB'
+                else:           mode = 'RGBA'
+                print '%s %s%s %s%s%s' % (name.ljust(space), 
+                  G, 'seq'.ljust(space), 
+                  R, '[%i mat %ix%i %s]' % (nbm, w, h, mode), N)
         continue
 
     if progname == 'ldir':
@@ -193,9 +204,15 @@ while 1:
                 size  = len(WORLD[name][1]) * 8
             elif kind == 'mat':
                 mode = len(WORLD[name][1])
-                w    = len(WORLD[name][1][0][0])
                 h    = len(WORLD[name][1][0])
+                w    = len(WORLD[name][1][0][0])
                 size = mode * w * h * 4
+            elif kind == 'seq':
+                nbm  = len(WORLD[name][1])
+                mode = len(WORLD[name][1][0])
+                h    = len(WORLD[name][1][0][0])
+                w    = len(WORLD[name][1][0][0][0])
+                size = mode * w * h * nbm * 4
             ie    = int(log(size) // log(1e3))
             size /= (1e3 ** ie)
             size  = '%5.2f %sB' % (size, txt[ie])
@@ -348,28 +365,62 @@ while 1:
             print '## load image from file'
             print '#  Pymir function'
             print '#  load_im <filename.[bmp, jpg, png]>'
+            print '#  load_im <filen*.bmp>'
             continue
-        fname = args[0]
+        import os
+        if args[0].find('*') != -1:
+            lname  = os.listdir('.')
+            pattern = args[0].split('*')
+            if len(pattern) != 2:
+                outbox_error('Bad pattern')
+                continue
+            mem = []
+            for name in lname:
+                if name.find(pattern[0]) != -1 and name.find(pattern[1]) != -1:
+                    mem.append(name)
+            if len(mem) == 0:
+                outbox_error('No image matchs with the pattern')
+                continue
+            fname = mem[0]
+            mem.sort()
+            outbox_bang('%i files match with the pattern' % len(mem))
+            print mem
+            answer = inbox_question('Agree to load all of them')
+            if answer == 'n': continue
+        else:
+            mem   = None
+            fname = args[0]
+
         name, ext = fname.split('.')
         if ext not in ['bmp', 'jpg', 'png']:
             outbox_error('Bad extension (bmp, jpg or png)')
             continue
-        import os
         lname = os.listdir('.')
         if fname not in lname:
             outbox_exist(fname)
             continue
-        from pymir_kernel import image_read, image_im2mat
-        im  = image_read(fname)
-        mat = image_im2mat(im)
-        del im
         lname = WORLD.keys()
         while name in lname:
             answer = inbox_overwrite(name)
             if answer == 'n': name = inbox_input('Change to a new name:')
             else: break
-        WORLD[name] = ['mat', mat]
-        del mat
+        from pymir_kernel import image_read, image_im2mat
+        if mem is None:
+            im  = image_read(fname)
+            mat = image_im2mat(im)
+            del im
+            WORLD[name] = ['mat', mat]
+            del mat
+        else:
+            seq  = []
+            name = mem[0].split('.')[0] 
+            for item in mem:
+                im  = image_read(item)
+                mat = image_im2mat(im)
+                seq.append(mat)
+            del im, mat
+            WORLD[name] = ['seq', seq]
+            del seq
         continue
 
     if progname == 'save_im':
