@@ -183,20 +183,41 @@ def image_plot_points(im, pts, kind = 'point', color = 'red'):
     return im
 
 # V0.1 2008-12-20 20:13:39 JB
+# V0.2 2009-03-04 15:48:11 JB
 def image_im2mat(im):
     '''
-    Transform PIL image to Numpy array (only gray image)
+    Transform PIL image to Numpy array (gray, RGB , and RGBA image)
     => [im] PIL image data
-    <= mat  Numpy array
+    <= mat  Numpy array, [l], [r, g, b] or [r, g, b, a]
     '''
     from numpy import array, reshape
-
-    data = im.getdata()
+   
     w, h = im.size
-    tmp  = array(data)
-    im   = reshape(tmp, (h,w))
-
-    return im
+    mode = im.mode
+    if mode = 'L':
+        data = im.getdata()
+        tmp  = array(data)
+        im   = reshape(tmp, (h, w))
+        return [im]
+    else:
+        if   mode = 'RGB':  r, g, b    = im.split()
+        elif mode = 'RGBA': r, g, b, a = im.split()
+        data_r    = r.getdata()
+        data_g    = g.getdata()
+        data_b    = b.getdata()
+        tmpr      = array(data_r)
+        tmpg      = array(data_g)
+        tmpb      = array(data_b)
+        data_r    = reshape(tmpr, (h, w))
+        data_g    = reshape(tmpg, (h, w))
+        data_b    = reshape(tmpb, (h, w))
+        if   mode = 'RGB':
+            return [data_r, data_g, data_b]
+        elif mode = 'RGBA':
+            data_a = a.getdata()
+            tmpa   = array(data_a)
+            data_a = reshape(tmpa, (h, w))
+            return [data_r, data_g, data_b, data_a]
 
 # V0.1 2008-12-20 20:16:51 JB
 def image_mat2im(mat):
