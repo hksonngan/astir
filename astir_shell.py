@@ -73,20 +73,24 @@ print '\_| |_/___/\__|_|_|'
 print '** Astir Shell V1.0 **\n'
 '''
 while 1:
-    try: cmd = raw_input('%sastir%s %i%s %%%s ' % (B, GB, ct_cmd, G, N)).split()
+    try: cmd = raw_input('%sastir%s %i%s %%%s ' % (B, GB, ct_cmd, G, N))
     except:
         print 'bye'
         sys.exit(0)
 
     if not cmd: continue
-    if cmd not in listfun:
-        print 'toto'
-
 
     ct_cmd   += 1
-    progname  = cmd[0]
-    args      = cmd[1:]
+    parse     = cmd.split()
+    progname  = parse[0]
+    args      = parse[1:]
 
+    if progname not in listfun:
+        try: print eval(cmd)
+        except:
+            outbox_bang(' 8-/')
+            continue
+            
     #=== shell function =========
     if progname == 'exit':
         print 'bye'
