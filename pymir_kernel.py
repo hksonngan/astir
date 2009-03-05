@@ -186,7 +186,7 @@ def image_plot_points(im, pts, kind = 'point', color = 'red'):
 # V0.2 2009-03-04 15:48:11 JB
 def image_im2mat(im):
     '''
-    Transform PIL image to Numpy array (gray, RGB , and RGBA image)
+    Transform PIL image to Numpy array (gray, RGB , and RGBA images)
     => [im] PIL image data
     <= mat  Numpy array, [l], [r, g, b] or [r, g, b, a]
     '''
@@ -194,6 +194,10 @@ def image_im2mat(im):
    
     w, h = im.size
     mode = im.mode
+    if mode not in ['L', 'RGB', 'RGBA']:
+        print 'Mode not valide must be L, RGB, or RGBA, not %s' % mode
+        sys.exit()
+
     if mode = 'L':
         data = im.getdata()
         tmp  = array(data)
@@ -220,23 +224,44 @@ def image_im2mat(im):
             return [data_r, data_g, data_b, data_a]
 
 # V0.1 2008-12-20 20:16:51 JB
+# V0.2 2009-03-05 14:11:20 JB
 def image_mat2im(mat):
     '''
-    Transform Numpy array to PIL image (only gray image)
-    => [mat] Numpy array
+    Transform Numpy array to PIL image (gray, RGB, and RGBA images)
+    => [mat] Numpy array [l], [r, g, b], or [r, g, b, a]
     <= im    PIL image data
     '''
     from   numpy import reshape
     import Image
     
-    w   = len(mat[0])
-    h   = len(mat)
-    nbp = w * h
-    mat = list(reshape(mat, (nbp)))
-    im  = Image.new('L', (w, h), 255)
-    im.putdata(mat)
+    mode = len(mat)
+    if mode not in ['L', 'RGB', 'RGBA']:
+        print 'Mode not valide must be L, RGB, or RGBA, not %s' % mode
+        sys.exit()
     
-    return im
+    w    = len(mat[0][0])
+    h    = len(mat[0])
+    nbp  = w * h
+    if mode == 1:
+        mat = list(reshape(mat, (nbp)))
+        im  = Image.new('L', (w, h), 255)
+        im.putdata(mat)
+        return im
+    else:
+        r   = list(reshape(mat[0], (nbp)))
+        g   = list(reshape(mat[1], (nbp)))
+        b   = list(reshape(mat[2], (nbp)))
+        imr = Image.new('L', r.size, 255)
+        img = Image.new('L', g.size, 255)
+        imb = Image.new('L', b.size, 255)
+        if mode == 3:
+            im  = Image.merge('RGB', (imb, img, imb))
+            return im
+        elif mode == 4:
+            a   = list(reshape(mat[3], (nbp)))
+            ima = Image.new('L', a.size, 255)
+            im  = Image.merge('RGBA', (imb, img, imb, ima))
+            return im
 
 # V0.1 2008-12-07 00:35:17 JB
 def image_anaglyph(imr, iml):
