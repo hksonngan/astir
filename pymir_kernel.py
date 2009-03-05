@@ -198,14 +198,14 @@ def image_im2mat(im):
         print 'Mode not valide must be L, RGB, or RGBA, not %s' % mode
         sys.exit()
 
-    if mode = 'L':
+    if mode == 'L':
         data = im.getdata()
         tmp  = array(data)
         im   = reshape(tmp, (h, w))
         return [im]
     else:
-        if   mode = 'RGB':  r, g, b    = im.split()
-        elif mode = 'RGBA': r, g, b, a = im.split()
+        if   mode == 'RGB':  r, g, b    = im.split()
+        elif mode == 'RGBA': r, g, b, a = im.split()
         data_r    = r.getdata()
         data_g    = g.getdata()
         data_b    = b.getdata()
@@ -215,9 +215,9 @@ def image_im2mat(im):
         data_r    = reshape(tmpr, (h, w))
         data_g    = reshape(tmpg, (h, w))
         data_b    = reshape(tmpb, (h, w))
-        if   mode = 'RGB':
+        if   mode == 'RGB':
             return [data_r, data_g, data_b]
-        elif mode = 'RGBA':
+        elif mode == 'RGBA':
             data_a = a.getdata()
             tmpa   = array(data_a)
             data_a = reshape(tmpa, (h, w))
@@ -232,12 +232,13 @@ def image_mat2im(mat):
     <= im    PIL image data
     '''
     from   numpy import reshape
+    from   sys   import exit
     import Image
     
     mode = len(mat)
-    if mode not in ['L', 'RGB', 'RGBA']:
+    if mode not in [1, 3, 4]:
         print 'Mode not valide must be L, RGB, or RGBA, not %s' % mode
-        sys.exit()
+        exit()
     
     w    = len(mat[0][0])
     h    = len(mat[0])
@@ -251,15 +252,15 @@ def image_mat2im(mat):
         r   = list(reshape(mat[0], (nbp)))
         g   = list(reshape(mat[1], (nbp)))
         b   = list(reshape(mat[2], (nbp)))
-        imr = Image.new('L', r.size, 255)
-        img = Image.new('L', g.size, 255)
-        imb = Image.new('L', b.size, 255)
+        imr = Image.new('L', (w, h), 255)
+        img = Image.new('L', (w, h), 255)
+        imb = Image.new('L', (w, h), 255)
         if mode == 3:
             im  = Image.merge('RGB', (imb, img, imb))
             return im
         elif mode == 4:
             a   = list(reshape(mat[3], (nbp)))
-            ima = Image.new('L', a.size, 255)
+            ima = Image.new('L', (w, h), 255)
             im  = Image.merge('RGBA', (imb, img, imb, ima))
             return im
 

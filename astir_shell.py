@@ -6,7 +6,7 @@ import readline # allow to back line in the shell
 
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
-           'ldir']
+           'ldir', 'load_im', 'save_im']
 
 B  = '\033[0;34m' # blue
 G  = '\033[0;32m' # green
@@ -58,9 +58,11 @@ def outbox_bang(message):
     print '%s!!%s %s' % (B, N, message)
 
 #=== shell ======================
+
+# WORLD structure: WORLD['keyname'] = [header, data]
 WORLD = {}
 ct_cmd = 1
-
+'''
 print '  ___      _   _'
 print ' / _ \    | | (_)'         
 print '/ /_\ \___| |_ _ _ __' 
@@ -69,7 +71,7 @@ print '| | | \__ \ |_| | |'
 print '\_| |_/___/\__|_|_|'
 
 print '** Astir Shell V1.0 **\n'
-
+'''
 while 1:
     try: cmd = raw_input('%sastir%s %i%s %%%s ' % (B, GB, ct_cmd, G, N)).split()
     except:
@@ -77,6 +79,9 @@ while 1:
         sys.exit(0)
 
     if not cmd: continue
+    if cmd not in listfun:
+        print 'toto'
+
 
     ct_cmd   += 1
     progname  = cmd[0]
@@ -96,9 +101,21 @@ while 1:
         space = 10 # cst columns size
         print '%s %s %s' % ('name'.ljust(space), 'type'.ljust(space), 'size'.ljust(space))
         for name in lname:
-            print '%s %s%s %s%s%s' % (name.ljust(space), 
+            kind = WORLD[name][0]
+            if kind == 'var':
+                print '%s %s%s %s%s%s' % (name.ljust(space), 
+                  G, 'var'.ljust(space), 
+                  R, ('[%i]' % len(WORLD[name][1])).ljust(space), N)
+            elif kind == 'mat':
+                mode = len(WORLD[name][1])
+                w    = len(WORLD[name][1][0][0])
+                h    = len(WORLD[name][1][0])
+                if   mode == 1: mode = 'L'
+                elif mode == 3: mode = 'RGB'
+                else:           mode = 'RGBA'
+                print '%s %s%s %s%s%s' % (name.ljust(space), 
                   G, 'mat'.ljust(space), 
-                  R, ('[%i]' % len(WORLD[name])).ljust(space), N)
+                  R, '[%ix%i %s]' % (w, h, mode), N)
         continue
 
     if progname == 'ldir':
@@ -107,8 +124,6 @@ while 1:
             print '#  ldir'
             continue
         import os
-        #list = os.listdir('.')
-        #print list
         os.system('ls')
         continue
 
@@ -169,11 +184,21 @@ while 1:
         txt = ['', 'k', 'M', 'G', 'T']
         lname = WORLD.keys()
         for name in lname:
-            size  = len(WORLD[name]) * 4
+            kind = WORLD[name][0]
+            if   kind == 'var':
+                size  = len(WORLD[name][1]) * 8
+            elif kind == 'mat':
+                mode = len(WORLD[name][1])
+                w    = len(WORLD[name][1][0][0])
+                h    = len(WORLD[name][1][0])
+                size = mode * w * h * 4
             ie    = int(log(size) // log(1e3))
             size /= (1e3 ** ie)
             size  = '%5.2f %sB' % (size, txt[ie])
-            print name, size
+            print '%s %s%s %s%s%s' % (name.ljust(space), 
+                  G, kind.ljust(space), 
+                  R, size.ljust(space), N)
+
         continue
 
     if progname == 'fun':
@@ -202,7 +227,7 @@ while 1:
 
     #=== input/output cmd =======
     if progname == 'save_var':
-        if len(args) == 0 or len(args) > 2 or args[0] == '-h':
+        if len(args) != 2:
             print '## save variable to file'
             print '#  save_var <var> <filename>'
             continue
@@ -310,5 +335,73 @@ while 1:
         name = args[0]
         size = int(args[1])
         V = [0] * size
-        WORLD[name] = V
-        
+        WORLD[name] = ['var', V]
+        continue
+
+    #=== Pymir command =========
+    if progname == 'load_im':
+        if len(args) == 0 or len(args) > 1 or args[0] == '-h':
+            print '## load image from file'
+            print '#  Pymir function'
+            print '#  load_im <filename.[bmp, jpg, png]>'
+            continue
+        fname = args[0]
+        name, ext = fname.split('.')
+        if ext not in ['bmp', 'jpg', 'png']:
+            outbox_error('Bad extension (bmp, jpg or png)')
+            continue
+        import os
+        lname = os.listdir('.')
+        if fname not in lname:
+            outbox_exist(fname)
+            continue
+        from pymir_kernel import image_read, image_im2mat
+        im  = image_read(fname)
+        mat = image_im2mat(im)
+        del im
+        lname = WORLD.keys()
+        while name in lname:
+            answer = inbox_overwrite(name)
+            if answer == 'n': name = inbox_input('Change to a new name:')
+            else: break
+        WORLD[name] = ['mat', mat]
+        del mat
+        continue
+
+    if progname == 'save_im':
+        if len(args) != 2:
+            print '## save image to file'
+            print '#  save_im <mat> <filename>'
+            continue
+        lname = WORLD.keys()
+        name  = args[0]
+        fname = args[1]
+        if name not in lname:
+            outbox_exist(name)
+            continue
+        if WORLD[name][0] != 'mat':
+            outbox_error('Only mat variable can be exported to image')
+            continue
+        lext = ['jpg', 'png', 'bmp']
+        ext = 'png'
+        if len(fname.split('.')) != 2:
+            outbox_bang('Must have an extension, set default to png')
+            ext = 'png'
+        else:
+            [fname, ext] = fname.split('.')
+            if ext not in lext:
+                outbox_error('Wrong extension, only jpg, png, or bmp')
+                continue
+        fname = fname + '.' + ext
+        import os
+        lname = os.listdir('.')
+        if fname in lname:
+            answer = inbox_overwrite(fname)
+            if answer == 'n': continue
+        from pymir_kernel import image_write, image_mat2im
+        mat = WORLD[name][1]
+        im  = image_mat2im(mat)
+        del mat
+        image_write(im, fname)
+        del im
+        continue
