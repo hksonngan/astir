@@ -255,12 +255,16 @@ def image_mat2im(mat):
         imr = Image.new('L', (w, h), 255)
         img = Image.new('L', (w, h), 255)
         imb = Image.new('L', (w, h), 255)
+        imr.putdata(r)
+        img.putdata(g)
+        imb.putdata(b)
         if mode == 3:
             im  = Image.merge('RGB', (imb, img, imb))
             return im
         elif mode == 4:
             a   = list(reshape(mat[3], (nbp)))
             ima = Image.new('L', (w, h), 255)
+            ima.putdata(a)
             im  = Image.merge('RGBA', (imb, img, imb, ima))
             return im
 

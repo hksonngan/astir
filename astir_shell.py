@@ -6,7 +6,7 @@ import readline # allow to back line in the shell
 
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
-           'ldir', 'load_im', 'save_im']
+           'ldir', 'load_im', 'save_im', 'show_mat']
 
 B  = '\033[0;34m' # blue
 G  = '\033[0;32m' # green
@@ -62,7 +62,7 @@ def outbox_bang(message):
 # WORLD structure: WORLD['keyname'] = [header, data]
 WORLD = {}
 ct_cmd = 1
-'''
+
 print '  ___      _   _'
 print ' / _ \    | | (_)'         
 print '/ /_\ \___| |_ _ _ __' 
@@ -71,7 +71,7 @@ print '| | | \__ \ |_| | |'
 print '\_| |_/___/\__|_|_|'
 
 print '** Astir Shell V1.0 **\n'
-'''
+
 while 1:
     try: cmd = raw_input('%sastir%s %i%s %%%s ' % (B, GB, ct_cmd, G, N))
     except:
@@ -459,4 +459,24 @@ while 1:
         del mat
         image_write(im, fname)
         del im
+        continue
+
+    if progname == 'show_mat':
+        if len(args) != 1:
+            print '## display mat as image'
+            print '#  show_mat <mat>'
+            continue
+        lname = WORLD.keys()
+        name  = args[0]
+        if name not in lname:
+            outbox_exist(name)
+            continue
+        if WORLD[name][0] != 'mat':
+            outbox_error('Only mat variable can be displayed')
+            continue
+        from pymir_kernel import image_show, image_mat2im
+        mat = WORLD[name][1]
+        im  = image_mat2im(mat)
+        image_show(im)
+        del im, mat
         continue
