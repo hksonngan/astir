@@ -74,11 +74,67 @@ def image_show(image):
     try:
         # window
         win  = Tk()
-        w, h = image.size[0], image.size[1]
+        w, h = image.size
         surf = Canvas(win, width = w, height = h, bg = 'white')
         bmp  = ImageTk.PhotoImage(image)
         item = surf.create_image(w//2, h//2, image = bmp)
         surf.grid(row = 1, column = 1, rowspan = 1, padx = 0, pady = 0)
+        win.mainloop()
+    except:
+        print 'Impossible to display image.'
+        sys.exit()
+
+# V0.1 2009-03-06 16:46:29 JB
+def image_show_grid(image, dgrid, color = 'red'):
+    '''
+    Display PIL image data to window Tkinter form, and draw
+    a grid with an interspace define byd dgrid.
+    => [image] PIL image data
+    => [dgrid] Interspace of the grid
+    => <color> Link color: 'black', 'red', 'green', 'white' or 'blue'
+               (default red)
+    <= nothing
+    '''
+
+    # define grid
+    w, h   = image.size
+    l1, l2 = [], []
+    for y in xrange(w, dgrid):
+        l1.append([y,     0])
+        l2.append([y, h - 1])
+    for x in xrange(h, dgrid):
+        l1.append([0,     x])
+        l2.append([w - 1, x])
+    image = image_plot_lines(image, l1, l2, color)
+    image_show(image)
+
+# V0.1 2009-03-06 16:26:57 JB
+def image_show_getwin(image, sw, nbpts):
+    '''
+    Display PIL image data to window Tkinter form in order
+    to select some points with the mouse to define windows work
+    => [image] PIL image data
+    => [sw]    Window size
+    => [nbpts] Number of points (windows) required
+    <= [pts]   List of points [[y0, x0], [y1, x1], ..., [yi, xi]]
+    '''
+    from Tkinter import Tk, Canvas
+    from PIL     import ImageTk, Image
+    import sys
+    
+    def callback(event):
+        print event.x, event.y
+
+    try:
+        # window
+        win  = Tk()
+        w, h = image.size
+        surf = Canvas(win, width = w, height = h, bg = 'white')
+        bmp  = ImageTk.PhotoImage(image)
+        item = surf.create_image(w//2, h//2, image = bmp)
+        surf.grid(row = 1, column = 1, rowspan = 1, padx = 0, pady = 0)
+        surf.bind('<Button-1>', callback)
+        surf.pack()
         win.mainloop()
     except:
         print 'Impossible to display image.'
@@ -181,6 +237,36 @@ def image_plot_points(im, pts, kind = 'point', color = 'red'):
     del draw
 
     return im
+
+# V0.1 2009-03-06 16:39:53 JB
+def image_plot_lines(im, l1, l2, color = 'black'):
+    '''
+    Plot the lines according list of points to PIL image data.
+    => [im]    PIL image
+    => [l1]    list of points (head of the lines),
+               [[l1_y0, l1_x0], [l1_y1, l1_x1], ..., [l1_yi, l1_xi]]
+    => [l2]    list of points (tail of the lines),
+               [[l2_y0, l2_x0], [l2_y1, l2_x1], ..., [l2_yi, l2_xi]]
+    => <color> link color: 'black', 'red', 'green', 'white' or 'blue'
+               (default black)
+    <= im      PIL image data with lines plotted
+    '''
+    import ImageDraw
+
+    draw = ImageDraw.Draw(im1)
+    if   color == 'black': col = (0,     0,   0)
+    elif color == 'white': col = (255, 255, 255)
+    elif color == 'red':   col = (255,   0,   0)
+    elif color == 'blue':  col = (0,     0, 255)
+    elif color == 'green': col = (0,   255,   0)
+    else:                  col = (0,     0,   0)
+
+    for n in xrange(len(m1)):
+        draw.line([int(l1[n, 1]), int(l1[n, 0]), int(l2[n, 1]), int(l2[n, 0])], fill = col)
+
+    del draw
+
+    return im1
 
 # V0.1 2008-12-20 20:13:39 JB
 # V0.2 2009-03-04 15:48:11 JB
