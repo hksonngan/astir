@@ -4,6 +4,7 @@
 from   pymir_kernel import image_read, image_write
 from   pymir_kernel import image_im2mat, image_mat2im
 from   pymir_kernel import image_show
+from   pymir_kernel import color_color2gray
 from   math import log
 import os, sys
 import readline # allow to back line in the shell
@@ -13,7 +14,8 @@ import cPickle
 
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
-           'ldir', 'load_im', 'save_im', 'show_mat']
+           'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
+           'seq2mat']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -132,6 +134,7 @@ while 1:
             print '#  ls'
             continue
         lname = WORLD.keys()
+        lname.sort()
         space = 10 # cst columns size
         print '%s %s %s' % ('name'.ljust(space), 'type'.ljust(space), 'size'.ljust(space))
         for name in lname:
@@ -177,15 +180,35 @@ while 1:
             print '#  rm all'
             print '#  rm <name>'
             print '#  rm <name> <name> ...'
+            print '#  rm <na*>'
             continue
-        if args[0] == 'all': args = WORLD.keys()
+        if   args[0] == 'all': args = WORLD.keys()
+        elif args[0].find('*') != -1:
+            lname   = WORLD.keys()
+            pattern = args[0].split('*')
+            if len(pattern) != 2:
+                outbox_error('Bad pattern')
+                continue
+            args = []
+            for name in lname:
+                if name.find(pattern[0]) != -1 and name.find(pattern[1]) != -1:
+                    args.append(name)
+            if len(args) == 0:
+                outbox_error('No variable matchs with the pattern')
+                continue
+            args.sort()
+            outbox_bang('%i variables match with the pattern' % len(args))
+            print args
+            answer = inbox_question('Agree to remove all of them')
+            if answer == 'n': continue
+
         for name in args:
             try: del WORLD[name]
             except KeyError: outbox_exist(args[0])
         continue
 
     if progname == 'mv':
-        if len(args) == 0 or len(args) > 2 or args[0] == '-h':
+        if len(args) != 2 or args[0] == '-h':
             print '## move variable'
             print '#  mv <source_name> <target_name>'
             continue
@@ -390,7 +413,7 @@ while 1:
             continue
 
         if args[0].find('*') != -1:
-            lname  = os.listdir('.')
+            lname   = os.listdir('.')
             pattern = args[0].split('*')
             if len(pattern) != 2:
                 outbox_error('Bad pattern')
@@ -484,7 +507,7 @@ while 1:
         continue
 
     if progname == 'show_mat':
-        if len(args) != 1:
+        if len(args) != 1 or args[0] == '-h':
             print '## display mat as image'
             print '#  show_mat <mat>'
             continue
@@ -501,3 +524,124 @@ while 1:
         image_show(im)
         del im, mat
         continue
+
+    if progname == 'color2gray':
+        if len(args) == 0 or len(args) > 2 or args[0] == '-h':
+            print '## convert mat color (RGB, RGBA)'
+            print '## to gray scale (Luminance)'
+            print '#  color2gray <mat>'
+            print '#  color2gray <mat> <new_mat>'
+            print '#  color2gray <seq>'
+            print '#  color2gray <seq> <new_seq>'
+            continue
+        lname = WORLD.keys()
+        src   = args[0]
+        if src not in lname:
+            outbox_exist(src)
+            continue
+        kind  = WORLD[src][0]
+        if kind not in ['mat', 'seq']:
+            outbox_error('Only mat or seq variable can be converted')
+            continue
+        if kind == 'mat':
+            if len(WORLD[src][1]) == 1:
+                outbox_error('Already in gray scale')
+                continue
+            if len(args) == 2:
+                trg = args[1]
+                while trg in lname:
+                    answer = inbox_overwrite(trg)
+                    if answer == 'n': trg == inbox_input('Change to a new name:')
+                    else: break
+            else: trg = src
+
+            im  = image_mat2im(WORLD[src][1])
+            im  = color_color2gray(im)
+            mat = image_im2mat(im)
+            WORLD[trg] = ['mat', mat]
+
+        else:
+            if len(WORLD[src][1][0]) == 1:
+                outbox_error('Already in gray scale')
+                continue
+            if len(args) == 2:
+                trg = args[1]
+                while trg in lname:
+                    answer = inbox_overwrite(trg)
+                    if answer == 'n': trg == inbox_input('Change to a new name:')
+                    else: break
+            else: trg = src
+            
+            nb   = len(WORLD[src][1])
+            bar  = progress_bar(nb, sizebar, 'Processing')
+            data = []
+            for n in xrange(nb):
+                im  = image_mat2im(WORLD[src][1][n])
+                im  = color_color2gray(im)
+                mat = image_im2mat(im)
+                data.append(mat)
+                bar.update(n)
+            WORLD[trg] = ['seq', data]
+            del data
+
+        del mat, im
+        continue
+                
+    if progname == 'seq2mat':
+        if len(args) != 3 or args[0] == '-h':
+            print '## unpack a sequence to a mat'
+            print '#  seq2mat <seq> 5 <basename_mat>'
+            print '#  seq2mat <seq> 2:4 <basename_mat>'
+            print '#  seq2mat <seq> all <basename_mat>'
+            print '%  seq2mat test 2:4 res'
+            continue
+        lname = WORLD.keys()
+        src   = args[0]
+        id    = args[1]
+        trg   = args[2]
+        if src not in lname:
+            outbox_exist(src)
+            continue
+        if WORLD[src][0] != 'seq':
+            outbox_error('Only seq variable can be converted')
+            continue
+        id   = id.split(':')
+        size = len(WORLD[src][1])
+        if len(id) == 1:
+            if id[0] == 'all':
+                id = range(size)
+            else:
+                try: id = int(id[0])
+                except:
+                     outbox_error('Range value incorrect')
+                     continue
+                if id < 0 or id >= size:
+                    outbox_error('Value is out of range [0, %i]' % size)
+                    continue
+                while trg in lname:
+                    answer = inbox_overwrite(trg)
+                    if answer == 'n': trg == inbox_input('Change to a new name')
+                    else: break
+                mat = WORLD[src][1][id]
+                WORLD[trg] = ['mat', mat]
+                continue
+        else:
+            try: start, stop = int(id[0]), int(id[1])
+            except:
+                outbox_error('Range value incorrect')
+                continue
+            if start < 0 or stop >= size:
+                outbox_error('Values are out of range [0, %i]' % size)
+                continue
+            id = range(start, stop + 1)
+
+        for i in id:
+            mat = WORLD[src][1][i]
+            WORLD[trg + '%03i' % i] = ['mat', mat]
+  
+        continue    
+        
+        
+                    
+
+            
