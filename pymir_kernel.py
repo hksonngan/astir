@@ -490,6 +490,62 @@ def space_harris(im):
     
     return space_non_max_supp(M, 5)
 
+# V0.1 2009-03-06 14:13:46 JB
+def lucas_kanade(im1, im2, p, sw, maxit):
+    '''
+    Lucas-Kanade
+    '''
+    from numpy import array, matrix
+    from Image import BICUBIC
+    from sys   import exit
+    rad  = sw // 2
+    dx   = [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]
+    dx   = array(dx)
+    dy   = dx.transpose()
+    im1  = color_color2gray(im1)
+    im2  = color_color2gray(im2)
+    w, h = im2.size
+    mat1 = image_im2mat(im1)
+    I1   = array(mat1[0])
+    i1   = I1[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+    Ix   = space_conv(I1, dx)
+    print 'Ix [ok]'
+    Iy   = space_conv(I1, dy)
+    print 'Iy [ok]'
+    ix   = Ix[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+    iy   = Iy[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+    #G    = space_gauss(13, 2)
+    #Ix2  = space_conv(Ix * Ix, G)
+    Ix2  = Ix * Ix
+    print 'Ix2 [ok]'
+    #Iy2  = space_conv(Iy * Iy, G)
+    Iy2  = Iy * Iy
+    print 'Iy2 [ok]'
+    #Ixy  = space_conv(Ix * Iy, G)
+    Ixy  = Ix * Iy
+    print 'Ixy [ok]'
+    ix2  = Ix2[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+    iy2  = Iy2[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+    ixy  = Ixy[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+    F    = matrix([[ix2.sum(), ixy.sum()], [iy2.sum(), ixy.sum()]])
+    V    = array([[0], [0]])
+    
+    for it in xrange(maxit):
+        im2.resize((w - V[0], h - V[1]), BICUBIC)
+        mat2 = image_im2mat(im2)
+        I2   = array(mat2[0])
+        i2   = I2[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+        #print i1
+        #print i2
+        it   = i2 - i1
+        ixt  = ix * it
+        iyt  = iy * it
+        T    = matrix([[-ixt.sum()], [-iyt.sum()]])
+        V    = F.I * T
+        V    = V.getA()
+        print V[0], V[1]
+
+
 # V0.1 2008-12-23 09:28:25 JB
 # V0.2 2008-12-24 08:43:38 JB
 def space_match_points(im1, im2, p1, p2, sw, kind='full'):
