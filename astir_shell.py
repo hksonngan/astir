@@ -1,19 +1,30 @@
 #!/usr/bin/env python
+#=== import =====================
+
+from   pymir_kernel import image_read, image_write
+from   pymir_kernel import image_im2mat, image_mat2im
+from   pymir_kernel import image_show
+from   math import log
 import os, sys
 import readline # allow to back line in the shell
+import cPickle
 
-#=== constants =================
+#=== constants ==================
 
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat']
 
 B  = '\033[0;34m' # blue
+BC = '\033[0;36m' # blue clear (or blue sky)
 G  = '\033[0;32m' # green
 GB = '\033[1;32m' # green bold
 R  = '\033[0;31m' # red
+RB = '\033[1;31m' # red bold
 N  = '\033[m'     # neutral
 Y  = '\033[0;33m' # yellow
+
+sizebar = 32
 
 #=== functions =================
 def inbox_overwrite(name):
@@ -57,12 +68,31 @@ def outbox_error(message):
 def outbox_bang(message):
     print '%s!!%s %s' % (B, N, message)
 
+class progress_bar:
+    def __init__(self, valmax, maxbar, title):
+        if valmax == 0:  valmax = 1
+        if maxbar > 200: maxbar = 200
+        valmax -= 1
+        self.valmax = valmax
+        self.maxbar = maxbar
+        self.title  = title
+
+    def update(self, val):
+        sys.stdout.flush()
+        if val > self.valmax: val = self.valmax
+        perc  = round((float(val) / float(self.valmax)) * 100)
+        scale = 100.0 / float(self.maxbar)
+        bar   = int(perc / scale)
+        out   = '\r%s%s %s[%s%s%s%s] %s%3d %%%s' % (BC, self.title.ljust(10), G, Y, '=' * bar, ' ' * (self.maxbar - bar), G, RB, perc, N)
+        sys.stdout.write(out)
+        if perc == 100: sys.stdout.write('\n')
+
 #=== shell ======================
 
 # WORLD structure: WORLD['keyname'] = [header, data]
-WORLD = {}
+WORLD  = {}
 ct_cmd = 1
-
+'''
 print '  ___      _   _'
 print ' / _ \    | | (_)'         
 print '/ /_\ \___| |_ _ _ __' 
@@ -71,11 +101,11 @@ print '| | | \__ \ |_| | |'
 print '\_| |_/___/\__|_|_|'
 
 print '** Astir Shell V1.0 **\n'
-
+'''
 while 1:
     try: cmd = raw_input('%sastir%s %i%s %%%s ' % (B, GB, ct_cmd, G, N))
     except:
-        print 'bye'
+        print '\nbye'
         sys.exit(0)
 
     if not cmd: continue
@@ -138,7 +168,6 @@ while 1:
             print '## listing of the current directory'
             print '#  ldir'
             continue
-        import os
         os.system('ls')
         continue
 
@@ -195,7 +224,7 @@ while 1:
             print '## memories for all variables'
             print '#  mem'
             continue
-        from math import log
+        space = 10
         txt = ['', 'k', 'M', 'G', 'T']
         lname = WORLD.keys()
         for name in lname:
@@ -252,14 +281,12 @@ while 1:
             print '## save variable to file'
             print '#  save_var <var> <filename>'
             continue
-        import cPickle
         lname = WORLD.keys()
         name  = args[0]
         fname = args[1]
         if name not in lname:
             outbox_exist(name)
             continue
-        import os
         lname = os.listdir('.')
         if fname in lname:
             answer = inbox_overwrite(fname)
@@ -275,12 +302,10 @@ while 1:
             print '## save all variables in the same file'
             print '#  save_world <filename>'
             continue
-        import cPickle
         kname = WORLD.keys()
         if len(kname) == 0:
             outbox_bang('Nothing to save')
             continue
-        import os
         fname = args[0]
         lname = os.listdir('.')
         if fname in lname:
@@ -297,9 +322,7 @@ while 1:
             print '## load variable from file'
             print '#  load_var <filename>'
             continue
-        import cPickle
         fname = args[0]
-        import os
         lname = os.listdir('.')
         if fname not in lname:
             outbox_exist(fname)
@@ -329,9 +352,7 @@ while 1:
             print '## load all variables from file'
             print '#  load_world <filename>'
             continue
-        import cPickle
         fname = args[0]
-        import os
         lname = os.listdir('.')
         if fname not in lname:
             outbox_exist(fname)
@@ -367,7 +388,7 @@ while 1:
             print '#  load_im <filename.[bmp, jpg, png]>'
             print '#  load_im <filen*.bmp>'
             continue
-        import os
+
         if args[0].find('*') != -1:
             lname  = os.listdir('.')
             pattern = args[0].split('*')
@@ -404,7 +425,6 @@ while 1:
             answer = inbox_overwrite(name)
             if answer == 'n': name = inbox_input('Change to a new name:')
             else: break
-        from pymir_kernel import image_read, image_im2mat
         if mem is None:
             im  = image_read(fname)
             mat = image_im2mat(im)
@@ -412,12 +432,16 @@ while 1:
             WORLD[name] = ['mat', mat]
             del mat
         else:
+            bar  = progress_bar(len(mem), sizebar, 'loading')
             seq  = []
-            name = mem[0].split('.')[0] 
+            name = mem[0].split('.')[0]
+            i    = 0
             for item in mem:
                 im  = image_read(item)
                 mat = image_im2mat(im)
                 seq.append(mat)
+                bar.update(i)
+                i += 1
             del im, mat
             WORLD[name] = ['seq', seq]
             del seq
@@ -448,12 +472,10 @@ while 1:
                 outbox_error('Wrong extension, only jpg, png, or bmp')
                 continue
         fname = fname + '.' + ext
-        import os
         lname = os.listdir('.')
         if fname in lname:
             answer = inbox_overwrite(fname)
             if answer == 'n': continue
-        from pymir_kernel import image_write, image_mat2im
         mat = WORLD[name][1]
         im  = image_mat2im(mat)
         del mat
@@ -474,7 +496,6 @@ while 1:
         if WORLD[name][0] != 'mat':
             outbox_error('Only mat variable can be displayed')
             continue
-        from pymir_kernel import image_show, image_mat2im
         mat = WORLD[name][1]
         im  = image_mat2im(mat)
         image_show(im)
