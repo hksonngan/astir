@@ -95,16 +95,19 @@ def image_show_grid(image, dgrid, color = 'red'):
                (default red)
     <= nothing
     '''
+    from numpy import array
 
     # define grid
-    w, h   = image.size
+    h, w   = image.size
     l1, l2 = [], []
-    for y in xrange(w, dgrid):
+    for y in xrange(0, w, dgrid):
         l1.append([y,     0])
         l2.append([y, h - 1])
-    for x in xrange(h, dgrid):
+    for x in xrange(0, h, dgrid):
         l1.append([0,     x])
         l2.append([w - 1, x])
+    l1 = array(l1)
+    l2 = array(l2)
     image = image_plot_lines(image, l1, l2, color)
     image_show(image)
 
@@ -253,7 +256,7 @@ def image_plot_lines(im, l1, l2, color = 'black'):
     '''
     import ImageDraw
 
-    draw = ImageDraw.Draw(im1)
+    draw = ImageDraw.Draw(im)
     if   color == 'black': col = (0,     0,   0)
     elif color == 'white': col = (255, 255, 255)
     elif color == 'red':   col = (255,   0,   0)
@@ -261,12 +264,12 @@ def image_plot_lines(im, l1, l2, color = 'black'):
     elif color == 'green': col = (0,   255,   0)
     else:                  col = (0,     0,   0)
 
-    for n in xrange(len(m1)):
+    for n in xrange(len(l1)):
         draw.line([int(l1[n, 1]), int(l1[n, 0]), int(l2[n, 1]), int(l2[n, 0])], fill = col)
 
     del draw
 
-    return im1
+    return im
 
 # V0.1 2008-12-20 20:13:39 JB
 # V0.2 2009-03-04 15:48:11 JB
@@ -594,42 +597,78 @@ def lucas_kanade(im1, im2, p, sw, maxit):
     mat1 = image_im2mat(im1)
     I1   = array(mat1[0])
     i1   = I1[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+    
+    #buf = image_mat2im([i1])
+    #image_show(buf)
+
     Ix   = space_conv(I1, dx)
     print 'Ix [ok]'
+
     Iy   = space_conv(I1, dy)
     print 'Iy [ok]'
+
     ix   = Ix[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
     iy   = Iy[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+
+    #buf = image_mat2im([ix])
+    #image_show(buf)
+
+    #buf = image_mat2im([iy])
+    #image_show(buf)
+
     #G    = space_gauss(13, 2)
     #Ix2  = space_conv(Ix * Ix, G)
+    
     Ix2  = Ix * Ix
+    Ix2  = color_norm_gray(Ix2)
     print 'Ix2 [ok]'
+    
+    
     #Iy2  = space_conv(Iy * Iy, G)
+    
     Iy2  = Iy * Iy
+    Iy2  = color_norm_gray(Iy2)
     print 'Iy2 [ok]'
     #Ixy  = space_conv(Ix * Iy, G)
+    
     Ixy  = Ix * Iy
+    Ixy  = color_norm_gray(Ixy)
     print 'Ixy [ok]'
     ix2  = Ix2[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
     iy2  = Iy2[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
     ixy  = Ixy[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
+
+    # print ix2
+
+    #buf = image_mat2im([ix2])
+    #image_show(buf)
+
+    #buf = image_mat2im([iy2])
+    #image_show(buf)
+
+    #buf = image_mat2im([ixy])
+    #image_show(buf)
+
+
     F    = matrix([[ix2.sum(), ixy.sum()], [iy2.sum(), ixy.sum()]])
     V    = array([[0], [0]])
-    
+    u, v = 0, 0
     for it in xrange(maxit):
-        im2.resize((w - V[0], h - V[1]), BICUBIC)
-        mat2 = image_im2mat(im2)
+        out = im2.resize((w - u, h - v), BICUBIC)
+        print out.size
+        mat2 = image_im2mat(out)
         I2   = array(mat2[0])
         i2   = I2[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
-        #print i1
-        #print i2
+ 
         it   = i2 - i1
         ixt  = ix * it
         iyt  = iy * it
         T    = matrix([[-ixt.sum()], [-iyt.sum()]])
         V    = F.I * T
         V    = V.getA()
-        print V[0], V[1]
+        u    = u + (V[0] / 50.0)
+        v    = v + (V[1] / 50.0)
+        print u[0], v[0], V[0], V[1]
 
 
 # V0.1 2008-12-23 09:28:25 JB

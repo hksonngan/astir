@@ -3,7 +3,7 @@
 
 from   pymir_kernel import image_read, image_write
 from   pymir_kernel import image_im2mat, image_mat2im
-from   pymir_kernel import image_show
+from   pymir_kernel import image_show, image_show_grid
 from   pymir_kernel import color_color2gray
 from   math import log
 import os, sys
@@ -94,7 +94,7 @@ class progress_bar:
 # WORLD structure: WORLD['keyname'] = [header, data]
 WORLD  = {}
 ct_cmd = 1
-'''
+
 print '  ___      _   _'
 print ' / _ \    | | (_)'         
 print '/ /_\ \___| |_ _ _ __' 
@@ -103,7 +103,7 @@ print '| | | \__ \ |_| | |'
 print '\_| |_/___/\__|_|_|'
 
 print '** Astir Shell V1.0 **\n'
-'''
+
 while 1:
     try: cmd = raw_input('%sastir%s %i%s %%%s ' % (B, GB, ct_cmd, G, N))
     except:
@@ -435,7 +435,9 @@ while 1:
             mem   = None
             fname = args[0]
 
-        name, ext = fname.split('.')
+        buf = fname.split('.')
+        if len(buf) == 2: name, ext = fname.split('.')
+        else:             name, ext = None, None
         if ext not in ['bmp', 'jpg', 'png']:
             outbox_error('Bad extension (bmp, jpg or png)')
             continue
@@ -507,9 +509,10 @@ while 1:
         continue
 
     if progname == 'show_mat':
-        if len(args) != 1 or args[0] == '-h':
+        if len(args) == 0 or len(args) > 2 or args[0] == '-h':
             print '## display mat as image'
             print '#  show_mat <mat>'
+            print '#  show_mat <mat> g10'
             continue
         lname = WORLD.keys()
         name  = args[0]
@@ -521,8 +524,24 @@ while 1:
             continue
         mat = WORLD[name][1]
         im  = image_mat2im(mat)
-        image_show(im)
-        del im, mat
+        if len(args) > 1:
+            if args[1][0] != 'g':
+                outbox_error('Argument %s incorrect' % args[1])
+                continue
+            else:
+                try: g = int(args[1][1:])
+                except:
+                    outbox_error('Argument %s incorrect' % args[1])
+                    continue
+                if g < 1 or g > 200:
+                    outbox_error('Argument g incorrect [1; 200]')
+                    continue
+                image_show_grid(im, g)
+                del g
+        else:
+            image_show(im)
+        
+            del im, mat
         continue
 
     if progname == 'color2gray':
