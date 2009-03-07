@@ -596,6 +596,7 @@ def lucas_kanade(im1, im2, p, sw, maxit):
     w, h = im2.size
     mat1 = image_im2mat(im1)
     I1   = array(mat1[0])
+    I1   = I1 / 255.0
     i1   = I1[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
     
     #buf = image_mat2im([i1])
@@ -616,23 +617,22 @@ def lucas_kanade(im1, im2, p, sw, maxit):
     #buf = image_mat2im([iy])
     #image_show(buf)
 
-    #G    = space_gauss(13, 2)
-    #Ix2  = space_conv(Ix * Ix, G)
+    G    = space_gauss(13, 2)
+
+    Ix2  = space_conv(Ix * Ix, G)
     
-    Ix2  = Ix * Ix
-    Ix2  = color_norm_gray(Ix2)
+    #Ix2  = Ix * Ix
+    #Ix2  = color_norm_gray(Ix2)
     print 'Ix2 [ok]'
     
+    Iy2  = space_conv(Iy * Iy, G)
     
-    #Iy2  = space_conv(Iy * Iy, G)
-    
-    Iy2  = Iy * Iy
-    Iy2  = color_norm_gray(Iy2)
+    #Iy2  = Iy * Iy
+    #Iy2  = color_norm_gray(Iy2)
     print 'Iy2 [ok]'
-    #Ixy  = space_conv(Ix * Iy, G)
-    
-    Ixy  = Ix * Iy
-    Ixy  = color_norm_gray(Ixy)
+    Ixy  = space_conv(Ix * Iy, G)
+    #Ixy  = Ix * Iy
+    #Ixy  = color_norm_gray(Ixy)
     print 'Ixy [ok]'
     ix2  = Ix2[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
     iy2  = Iy2[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
@@ -655,21 +655,24 @@ def lucas_kanade(im1, im2, p, sw, maxit):
     u, v = 0, 0
     for it in xrange(maxit):
         out = im2.resize((w - u, h - v), BICUBIC)
-        print out.size
+        #print out.size
         mat2 = image_im2mat(out)
         I2   = array(mat2[0])
+        I2   = I2 / 255.0
         i2   = I2[p[0][0]-rad:p[0][0]+rad+1, p[0][1]-rad:p[0][1]+rad+1]
- 
         it   = i2 - i1
         ixt  = ix * it
         iyt  = iy * it
-        T    = matrix([[-ixt.sum()], [-iyt.sum()]])
+        T    = matrix([[ixt.sum()], [iyt.sum()]])
+        #print F
+        #print T
+        #print V
         V    = F.I * T
         V    = V.getA()
-        u    = u + (V[0] / 50.0)
-        v    = v + (V[1] / 50.0)
-        print u[0], v[0], V[0], V[1]
-
+        u    = u - (V[0] * 20.0)
+        v    = v - (V[1] * 20.0)
+        #print 'eu', V[0], 'ev', V[1], 'u', u[0], 'v', v[0]
+        print u[0], v[0]
 
 # V0.1 2008-12-23 09:28:25 JB
 # V0.2 2008-12-24 08:43:38 JB
