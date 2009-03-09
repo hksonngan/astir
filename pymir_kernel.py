@@ -579,10 +579,46 @@ def space_harris(im):
     
     return space_non_max_supp(M, 5)
 
+
+# V0.1 2009-03-07 11:33:27 JB
+def space_align(im1, im2, p, sw, tx, ty):
+    from numpy import array
+
+    rad  = sw // 2
+    xi   = p[0][1]
+    yi   = p[0][0]
+    im1  = color_color2gray(im1)
+    im2  = color_color2gray(im2)
+    w, h = im2.size
+    I1   = image_im2mat(im1)
+    I2   = image_im2mat(im2)
+    I1   = array(I1[0])
+    I2   = array(I2[0])
+    I1   = I1 / 255.0
+    I2   = I2 / 255.0
+    i1   = I1[yi - rad:yi + rad + 1, xi - rad:xi + rad + 1]
+    
+    xp   = 0
+    yp   = 0
+    vmin = 1e9
+    for y in xrange(yi - ty, yi + ty + 1):
+        for x in xrange(xi - tx, xi + tx + 1):
+            i2 = I2[y - rad:y + rad + 1, x - rad:x + rad + 1]
+            e  = (i2 - i1)
+            e  = e * e
+            v  = e.sum()
+            if v < vmin:
+                vmin   = v
+                xp, yp = x, y
+            #print 'x:', x, 'y:', y, 'v:', v
+
+    return xp - xi, yp - yi
+
 # V0.1 2009-03-06 14:13:46 JB
 def lucas_kanade(im1, im2, p, sw, maxit):
     '''
     Lucas-Kanade
+    !!! DRAFT !!!
     '''
     from numpy import array, matrix
     from Image import BICUBIC
