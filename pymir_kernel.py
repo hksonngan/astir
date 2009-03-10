@@ -291,6 +291,7 @@ def image_im2mat(im):
         data = im.getdata()
         tmp  = array(data)
         im   = reshape(tmp, (h, w))
+        im  = im / 255.0
         return [im]
     else:
         if   mode == 'RGB':  r, g, b    = im.split()
@@ -304,12 +305,16 @@ def image_im2mat(im):
         data_r    = reshape(tmpr, (h, w))
         data_g    = reshape(tmpg, (h, w))
         data_b    = reshape(tmpb, (h, w))
+        data_r    = data_r / 255.0
+        data_g    = data_g / 255.0
+        data_b    = data_b / 255.0
         if   mode == 'RGB':
             return [data_r, data_g, data_b]
         elif mode == 'RGBA':
-            data_a = a.getdata()
-            tmpa   = array(data_a)
-            data_a = reshape(tmpa, (h, w))
+            data_a  = a.getdata()
+            tmpa    = array(data_a)
+            data_a  = reshape(tmpa, (h, w))
+            data_a  = data_a / 255.0
             return [data_r, data_g, data_b, data_a]
 
 # V0.1 2008-12-20 20:16:51 JB
@@ -333,11 +338,15 @@ def image_mat2im(mat):
     h    = len(mat[0])
     nbp  = w * h
     if mode == 1:
-        mat = list(reshape(mat, (nbp)))
-        im  = Image.new('L', (w, h), 255)
+        mat  = mat[0] * 255
+        mat  = list(reshape(mat, (nbp)))
+        im   = Image.new('L', (w, h), 255)
         im.putdata(mat)
         return im
     else:
+        r   = r * 255
+        g   = g * 255
+        b   = b * 255
         r   = list(reshape(mat[0], (nbp)))
         g   = list(reshape(mat[1], (nbp)))
         b   = list(reshape(mat[2], (nbp)))
@@ -351,6 +360,7 @@ def image_mat2im(mat):
             im  = Image.merge('RGB', (imb, img, imb))
             return im
         elif mode == 4:
+            a   = a * 255
             a   = list(reshape(mat[3], (nbp)))
             ima = Image.new('L', (w, h), 255)
             ima.putdata(a)
@@ -399,7 +409,9 @@ def color_norm_gray(mat):
     <= mat   Numpy array normalized
     '''
     vmin, vmax = mat.min(), mat.max()
-    s = 255.0 / abs(vmin - vmax)
+    s = 1.0 / abs(vmin - vmax)
+    print vmin, vmax, s
+
     norm = (mat - vmin) * s
  
     return norm
@@ -579,25 +591,84 @@ def space_harris(im):
     
     return space_non_max_supp(M, 5)
 
+# V0.1 2009-03-09 11:42:34 JB
+def space_reg_ave(lmat, p, sw, tx, ty):
+    from numpy import zeros, ones
+    xt, yt  = 0, 0
+    w       = len(lmat[0][0])
+    h       = len(lmat[0])
+    nb_mat  = len(lmat)
+    ave_mat = lmat[0].copy()
+    mask    = ones((h, w))
+    for i in xrange(nb_mat - 1):
+        mat1     = lmat[i].copy()
+        mat2     = lmat[i + 1].copy()
+        xp, yp   = space_align(mat1, mat2, p, sw, tx, ty)
+
+        p[0][0] += yp
+        p[0][1] += xp
+        xt      += xp
+        yt      += yp
+        print 'im:', i, i + 1, 'dx:', xp, 'dy:', yp
+
+        for j in xrange(h):
+            for i in xrange(w):
+                xm = i - xt
+                ym = j - yt
+                if xm > 0 and xm < w and ym > 0 and ym < h:
+                    ave_mat[ym, xm]  = ave_mat[ym, xm] + mat2[j, i]
+                    mask[ym, xm]    += 1
+
+    ave_mat = ave_mat / float(nb_mat)
+ 
+    j = 0
+    while j < h:
+        ct_w = 0
+        i    = 0
+        while i < w:
+             if int(mask[j, i]) == nb_mat:
+                 ct_w += 1
+             i += 1
+        if ct_w != 0:
+            break
+        j += 1
+
+    i = 0
+    while i < w:
+        ct_h = 0
+        j    = 0
+        while j < h:
+            if mask[j, i] == nb_mat:
+                ct_h += 1
+            j += 1
+        if ct_h != 0: break
+        i += 1
+
+    print ct_w, ct_h
+ 
+    crop = zeros((ct_h, ct_w))
+    ct_i, ct_j = 0, 0
+    for j in xrange(h):
+        ct_i = 0
+        for i in xrange(w):
+            if mask[j, i] == nb_mat:
+                crop[ct_j, ct_i] = ave_mat[j, i]
+                ct_i += 1
+        if ct_i != 0: ct_j += 1
+          
+    crop = color_norm_gray(crop)
+
+    return crop
 
 # V0.1 2009-03-07 11:33:27 JB
-def space_align(im1, im2, p, sw, tx, ty):
-    from numpy import array
-
+def space_align(I1, I2, p, sw, tx, ty):
+    # I1 and I2 are mat
     rad  = sw // 2
     xi   = p[0][1]
     yi   = p[0][0]
-    im1  = color_color2gray(im1)
-    im2  = color_color2gray(im2)
-    w, h = im2.size
-    I1   = image_im2mat(im1)
-    I2   = image_im2mat(im2)
-    I1   = array(I1[0])
-    I2   = array(I2[0])
-    I1   = I1 / 255.0
-    I2   = I2 / 255.0
+    w    = len(I1[0])
+    h    = len(I1)
     i1   = I1[yi - rad:yi + rad + 1, xi - rad:xi + rad + 1]
-    
     xp   = 0
     yp   = 0
     vmin = 1e9
