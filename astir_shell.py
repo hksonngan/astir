@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+
+## Convention
+# import
+# constants
+# shell functions
+# cmd functions
+# shell io
+# parser and caller
+
 #=== import =====================
 
 from   pymir_kernel import image_read, image_write
@@ -6,7 +15,7 @@ from   pymir_kernel import image_im2mat, image_mat2im
 from   pymir_kernel import image_show, image_show_grid
 from   pymir_kernel import color_color2gray
 from   math import log
-import os, sys
+import os, sys, optparse
 import readline # allow to back line in the shell
 import cPickle
 
@@ -28,7 +37,10 @@ Y  = '\033[0;33m' # yellow
 
 sizebar = 32
 
-#=== functions =================
+# WORLD structure: WORLD['keyname'] = [header, data]
+WORLD  = {}
+
+#=== shell functions ============
 def inbox_overwrite(name):
     answer = ''
     while answer != 'y' and answer != 'n':
@@ -89,10 +101,599 @@ class progress_bar:
         sys.stdout.write(out)
         if perc == 100: sys.stdout.write('\n')
 
-#=== shell ======================
+#=== cmd functions =============
+def call_ls(args):
+    '''
+Listing all variables in work space
+ls
+    '''
+    if len(args) > 0:
+        print call_ls.__doc__
+        return 0
+    lname = WORLD.keys()
+    lname.sort()
+    space = 10 # cst columns size
+    print '%s %s %s' % ('name'.ljust(space), 'type'.ljust(space), 'size'.ljust(space))
+    for name in lname:
+        kind = WORLD[name][0]
+        if kind == 'var':
+            print '%s %s%s %s%s%s' % (name.ljust(space), 
+              G, 'var'.ljust(space), 
+              R, ('[%i]' % len(WORLD[name][1])).ljust(space), N)
+        elif kind == 'mat':
+            mode = len(WORLD[name][1])
+            h    = len(WORLD[name][1][0])
+            w    = len(WORLD[name][1][0][0])
+            if   mode == 1: mode = 'L'
+            elif mode == 3: mode = 'RGB'
+            else:           mode = 'RGBA'
+            print '%s %s%s %s%s%s' % (name.ljust(space), 
+              G, 'mat'.ljust(space), 
+              R, '[%ix%i %s]' % (w, h, mode), N)
+        elif kind == 'seq':
+            nbm  = len(WORLD[name][1])
+            mode = len(WORLD[name][1][0])
+            h    = len(WORLD[name][1][0][0])
+            w    = len(WORLD[name][1][0][0][0])
+            if   mode == 1: mode = 'L'
+            elif mode == 3: mode = 'RGB'
+            else:           mode = 'RGBA'
+            print '%s %s%s %s%s%s' % (name.ljust(space), 
+              G, 'seq'.ljust(space), 
+              R, '[%i mat %ix%i %s]' % (nbm, w, h, mode), N)
+    return 1
 
-# WORLD structure: WORLD['keyname'] = [header, data]
-WORLD  = {}
+def call_ldir(args):
+    '''
+Listing the current directory
+ldir
+    '''
+    if len(args) > 0:
+        print call_ldir.__doc__
+        return 0
+
+    os.system('ls')
+    return 1
+
+def call_rm(args):
+    '''
+Remove variables in work space
+rm all
+rm <name>
+rm <name1> <name2> ...
+rm <na*>
+    '''
+    if len(args) == 0 or args[0] == '-h':
+        print call_rm.__doc__
+        return 0
+    if   args[0] == 'all': args = WORLD.keys()
+    elif args[0].find('*') != -1:
+        lname   = WORLD.keys()
+        pattern = args[0].split('*')
+        if len(pattern) != 2:
+            outbox_error('Bad pattern')
+            return -1
+        args = []
+        for name in lname:
+            if name.find(pattern[0]) != -1 and name.find(pattern[1]) != -1:
+                args.append(name)
+        if len(args) == 0:
+            outbox_error('No variable matchs with the pattern')
+            return -1
+        args.sort()
+        outbox_bang('%i variables match with the pattern' % len(args))
+        print args
+        answer = inbox_question('Agree to remove all of them')
+        if answer == 'n': return 0
+
+    for name in args:
+        try: del WORLD[name]
+        except KeyError: outbox_exist(args[0])
+
+    return 1
+
+def call_mv(args):
+    '''
+Move/rename variables
+mv <source_name> <target_name>
+    '''
+    if len(args) != 2 or args[0] == '-h':
+        print call_mv.__doc__
+        return 0
+    try: data = WORLD[args[0]]
+    except KeyError:
+        outbox_exist(args[0])
+        return -1
+    keys = WORLD.keys()
+    if args[1] in keys:
+        answer = inbox_overwrite(args[1])
+        if answer == 'n': return 0
+    WORLD[args[1]] = data
+    del WORLD[args[0]]
+    del data
+
+    return 1
+
+def call_cp(args):
+    '''
+Copy variable
+cp <source_name> <target_name>
+    '''
+    if len(args) == 0 or len(args) > 2 or args[0] == '-h':
+        print call_cp.__doc__
+        return 0
+    try: data = WORLD[args[0]]
+    except KeyError:
+        outbox_exist(args[0])
+        return -1
+    keys = WORLD.keys()
+    if args[1] in keys:
+        answer = inbox_overwrite(args[1])
+        if answer == 'n': return 0
+    WORLD[args[1]] = data
+    del data
+
+    return 1
+
+def call_mem(args):
+    '''
+Memories used in work space by the variables
+mem
+    '''
+    if len(args) > 0:
+        print call_mem.__doc__
+        return 0
+    space = 10
+    txt = ['', 'k', 'M', 'G', 'T']
+    lname = WORLD.keys()
+    for name in lname:
+        kind = WORLD[name][0]
+        if   kind == 'var':
+            size  = len(WORLD[name][1]) * 8
+        elif kind == 'mat':
+            mode = len(WORLD[name][1])
+            h    = len(WORLD[name][1][0])
+            w    = len(WORLD[name][1][0][0])
+            size = mode * w * h * 4
+        elif kind == 'seq':
+            nbm  = len(WORLD[name][1])
+            mode = len(WORLD[name][1][0])
+            h    = len(WORLD[name][1][0][0])
+            w    = len(WORLD[name][1][0][0][0])
+            size = mode * w * h * nbm * 4
+        ie    = int(log(size) // log(1e3))
+        size /= (1e3 ** ie)
+        size  = '%5.2f %sB' % (size, txt[ie])
+        print '%s %s%s %s%s%s' % (name.ljust(space), 
+              G, kind.ljust(space), 
+              R, size.ljust(space), N)
+        
+    return 1
+
+def call_fun(args):
+    '''
+Listing funtions available in Astir
+fun
+    '''
+    if len(args) > 0:
+        print call_fun.__doc__
+        return 0
+    listfun.sort()
+    sfun = len(listfun)
+    nc   = 3  # cst 3 columns
+    if sfun % nc == 0: nl = sfun // nc
+    else:              nl = (sfun // nc) + 1
+    smax = 0
+    for i in xrange(sfun):
+        val = len(listfun[i])
+        if val > smax: smax = val
+    for i in xrange(nl):
+        txt = ''
+        for j in xrange(nc):
+            ind = j * nl + i
+            if ind < sfun: txt += '%s  ' % listfun[ind].ljust(smax)
+            else:          txt += ''
+        print txt
+
+    return 1
+
+def call_save_var(args):
+    '''
+Save Astir variable to file
+save_var <var_name> <file_name>
+    '''
+    if len(args) != 2:
+        print call_save_var.__doc__
+        return 0
+    lname = WORLD.keys()
+    name  = args[0]
+    fname = args[1]
+    if name not in lname:
+        outbox_exist(name)
+        return -1
+    lname = os.listdir('.')
+    if fname in lname:
+        answer = inbox_overwrite(fname)
+        if answer == 'n': return 0
+    f = open(fname, 'w')
+    local = ['var_astir', name, WORLD[name]]
+    cPickle.dump(local, f)
+    f.close()
+
+    return 1
+
+def call_save_world(args):
+    '''
+Save the whole work space to a file
+save_world <file_name>
+    '''
+    if len(args) == 0 or len(args) > 1 or args[0] == '-h':
+        print call_save_world.__doc__
+    kname = WORLD.keys()
+    if len(kname) == 0:
+        outbox_bang('Nothing to save')
+        return 0
+    fname = args[0]
+    lname = os.listdir('.')
+    if fname in lname:
+        answer = inbox_overwrite(fname)
+        if answer == 'n': return 0
+    f = open(fname, 'w')
+    local = ['world_astir', WORLD]
+    cPickle.dump(local, f)
+    f.close()
+    
+    return 1
+
+def call_load_var(args):
+    '''
+Load variable fron file to work space
+load_var <file_name>
+    '''
+    if len(args) == 0 or len(args) > 1 or args[0] == '-h':
+        print call_load_var.__doc__
+        return 0
+    fname = args[0]
+    lname = os.listdir('.')
+    if fname not in lname:
+        outbox_exist(fname)
+        return -1
+    f = open(fname, 'r')
+    try: local = cPickle.load(f)
+    except:
+        outbox_error('Can not open the file')
+        f.close()
+        return -1
+    f.close()
+    if local[0] != 'var_astir':
+        outbox_error('Not Astir format')
+        return -1
+    varname = local[1]
+    vardata = local[2]
+    lname   = WORLD.keys()
+    while varname in lname:
+        answer = inbox_overwrite(varname)
+        if answer == 'n': varname = inbox_input('Change to a new name:')
+        else: break
+    WORLD[varname] = vardata
+
+    return 1
+
+def call_load_world(args):
+    '''
+Load a work space from a file
+load_world <file_name>    
+    '''
+    if len(args) == 0 or len(args) > 1 or args[0] == '-h':
+        print call_load_world.__doc__
+        return 0
+    fname = args[0]
+    lname = os.listdir('.')
+    if fname not in lname:
+        outbox_exist(fname)
+        return -1
+    f = open(fname, 'r')
+    try: local = cPickle.load(f)
+    except:
+        outbox_error('Can not open the file')
+        f.close()
+        return -1
+    f.close()
+    if local[0] != 'world_astir':
+        outbox_error('Not Astir format')
+        return -1
+    answer = inbox_question('All variables will be deleted, are you agree')
+    if answer == 'n': return 0
+    del WORLD
+    WORLD = local[1]
+
+    return 1
+
+def call_load_im(args):
+    '''
+Load images from files
+Only one image
+load_im <file_name.[bmp, jpg, png]>
+Several images as a sequence
+load_im <file_na*.png>
+    '''
+    if len(args) == 0 or len(args) > 1 or args[0] == '-h':
+        print call_load_im.__doc__
+        return 0
+    if args[0].find('*') != -1:
+        lname   = os.listdir('.')
+        pattern = args[0].split('*')
+        if len(pattern) != 2:
+            outbox_error('Bad pattern')
+            return -1
+        mem = []
+        for name in lname:
+            if name.find(pattern[0]) != -1 and name.find(pattern[1]) != -1:
+                mem.append(name)
+        if len(mem) == 0:
+            outbox_error('No image matchs with the pattern')
+            return -1
+        fname = mem[0]
+        mem.sort()
+        outbox_bang('%i files match with the pattern' % len(mem))
+        print mem
+        answer = inbox_question('Agree to load all of them')
+        if answer == 'n': return 0
+    else:
+        mem   = None
+        fname = args[0]
+
+    buf = fname.split('.')
+    if len(buf) == 2: name, ext = fname.split('.')
+    else:             name, ext = None, None
+    if ext not in ['bmp', 'jpg', 'png']:
+        outbox_error('Bad extension (bmp, jpg or png)')
+        return -1
+    lname = os.listdir('.')
+    if fname not in lname:
+        outbox_exist(fname)
+        return -1
+    lname = WORLD.keys()
+    while name in lname:
+        answer = inbox_overwrite(name)
+        if answer == 'n': name = inbox_input('Change to a new name:')
+        else: break
+    if mem is None:
+        im  = image_read(fname)
+        mat = image_im2mat(im)
+        del im
+        WORLD[name] = ['mat', mat]
+        del mat
+    else:
+        bar  = progress_bar(len(mem), sizebar, 'loading')
+        seq  = []
+        name = mem[0].split('.')[0]
+        i    = 0
+        for item in mem:
+            im  = image_read(item)
+            mat = image_im2mat(im)
+            seq.append(mat)
+            bar.update(i)
+            i += 1
+        del im, mat
+        WORLD[name] = ['seq', seq]
+        del seq
+
+    return 1
+
+def call_save_im(args):
+    '''
+Save image from a variable to a file
+save_im <mat_name> <file_name.[bmp, jpg, png]>
+    '''
+    if len(args) != 2:
+        print call_save_im.__doc__
+        return 0
+    lname = WORLD.keys()
+    name  = args[0]
+    fname = args[1]
+    if name not in lname:
+        outbox_exist(name)
+        return -1
+    if WORLD[name][0] != 'mat':
+        outbox_error('Only mat variable can be exported to image')
+        return -1
+    lext = ['jpg', 'png', 'bmp']
+    ext = 'png'
+    if len(fname.split('.')) != 2:
+        outbox_bang('Must have an extension, set default to png')
+        ext = 'png'
+    else:
+        [fname, ext] = fname.split('.')
+        if ext not in lext:
+            outbox_error('Wrong extension, only jpg, png, or bmp')
+            return -1
+    fname = fname + '.' + ext
+    lname = os.listdir('.')
+    if fname in lname:
+        answer = inbox_overwrite(fname)
+        if answer == 'n': return 0
+    mat = WORLD[name][1]
+    im  = image_mat2im(mat)
+    del mat
+    image_write(im, fname)
+    del im
+
+    return 1
+
+def call_show_mat(args):
+    '''
+Display a mat variable as an image
+show_mat <mat_name>
+Display a grid on the image
+show_mat <mat_name> g[size_inter_grid_in_pixel]
+    '''
+    if len(args) == 0 or len(args) > 2 or args[0] == '-h':
+        print call_show_mat.__doc__
+        return 0
+    lname = WORLD.keys()
+    name  = args[0]
+    if name not in lname:
+        outbox_exist(name)
+        return -1
+    if WORLD[name][0] != 'mat':
+        outbox_error('Only mat variable can be displayed')
+        return -1
+    mat = WORLD[name][1]
+    im  = image_mat2im(mat)
+    if len(args) > 1:
+        if args[1][0] != 'g':
+            outbox_error('Argument %s incorrect' % args[1])
+            return -1
+        else:
+            try: g = int(args[1][1:])
+            except:
+                outbox_error('Argument %s incorrect' % args[1])
+                return -1
+            if g < 1 or g > 200:
+                outbox_error('Argument g incorrect [1; 200]')
+                return -1
+            image_show_grid(im, g)
+            del g
+    else:
+        image_show(im)
+        del im, mat
+
+    return 1
+
+def call_color2gray(args):
+    '''
+Convert mat color (RGB or RGBA) to gray scale (Luminance)
+Convert in-place
+color2gray <mat_name>
+Convert to new mat
+color2gray <mat_name> <mat_new_name>
+Convert a mat sequence in-place
+color2gray <seq_name>
+Convert a mat sequence to a new one
+color2gray <seq_name> <seq_new_name>
+    '''
+    if len(args) == 0 or len(args) > 2 or args[0] == '-h':
+        print call_color2gray.__doc__
+        return 0
+    lname = WORLD.keys()
+    src   = args[0]
+    if src not in lname:
+        outbox_exist(src)
+        return -1
+    kind  = WORLD[src][0]
+    if kind not in ['mat', 'seq']:
+        outbox_error('Only mat or seq variable can be converted')
+        return -1
+    if kind == 'mat':
+        if len(WORLD[src][1]) == 1:
+            outbox_error('Already in gray scale')
+            return -1
+        if len(args) == 2:
+            trg = args[1]
+            while trg in lname:
+                answer = inbox_overwrite(trg)
+                if answer == 'n': trg == inbox_input('Change to a new name:')
+                else: break
+        else: trg = src
+
+        im  = image_mat2im(WORLD[src][1])
+        im  = color_color2gray(im)
+        mat = image_im2mat(im)
+        WORLD[trg] = ['mat', mat]
+
+    else:
+        if len(WORLD[src][1][0]) == 1:
+            outbox_error('Already in gray scale')
+            return -1
+        if len(args) == 2:
+            trg = args[1]
+            while trg in lname:
+                answer = inbox_overwrite(trg)
+                if answer == 'n': trg == inbox_input('Change to a new name:')
+                else: break
+        else: trg = src
+
+        nb   = len(WORLD[src][1])
+        bar  = progress_bar(nb, sizebar, 'Processing')
+        data = []
+        for n in xrange(nb):
+            im  = image_mat2im(WORLD[src][1][n])
+            im  = color_color2gray(im)
+            mat = image_im2mat(im)
+            data.append(mat)
+            bar.update(n)
+        WORLD[trg] = ['seq', data]
+        del data
+
+    del mat, im
+
+    return 1
+
+def call_seq2mat(args):
+    '''
+Extract mat variables from a sequence
+Only one
+seq2mat <seq_name> 5 <basename_mat>
+Or several mat, in this case 3 mats
+seq2mat <seq_name> 2:4 <basename_mat>
+Or all mat store in the sequence
+seq2mat <seq_name> all <basename_mat>
+new mat name = <basename_mat> + index (format 000)
+% seq2mat test 2 res
+res002
+    '''
+    if len(args) != 3 or args[0] == '-h':
+        print call_seq2mat.__doc__
+        return 0
+    lname = WORLD.keys()
+    src   = args[0]
+    id    = args[1]
+    trg   = args[2]
+    if src not in lname:
+        outbox_exist(src)
+        return -1
+    if WORLD[src][0] != 'seq':
+        outbox_error('Only seq variable can be converted')
+        return -1
+    id   = id.split(':')
+    size = len(WORLD[src][1])
+    if len(id) == 1:
+        if id[0] == 'all':
+            id = range(size)
+        else:
+            try: id = int(id[0])
+            except:
+                outbox_error('Range value incorrect')
+                return -1
+            if id < 0 or id >= size:
+                outbox_error('Value is out of range [0, %i]' % size)
+                return -1
+            while trg in lname:
+                answer = inbox_overwrite(trg)
+                if answer == 'n': trg == inbox_input('Change to a new name')
+                else: break
+            mat = WORLD[src][1][id]
+            WORLD[trg] = ['mat', mat]
+            return 1
+    else:
+        try: start, stop = int(id[0]), int(id[1])
+        except:
+            outbox_error('Range value incorrect')
+            return -1
+        if start < 0 or stop >= size:
+            outbox_error('Values are out of range [0, %i]' % size)
+            return -1
+        id = range(start, stop + 1)
+
+    for i in id:
+        mat = WORLD[src][1][i]
+        WORLD[trg + '%03i' % i] = ['mat', mat]
+
+    return 1
+
+#=== shell io ===================
+
 ct_cmd = 1
 
 print '  ___      _   _'
@@ -123,544 +724,66 @@ while 1:
             outbox_bang(' 8-/')
             continue
             
-    #=== shell function =========
+    #=== parser and caller ======
+
+    #=== basic functions
     if progname == 'exit':
         print 'bye'
         sys.exit(0)
-    
     if progname == 'ls':
-        if len(args) > 0:
-            print '## listing of all variables'
-            print '#  ls'
-            continue
-        lname = WORLD.keys()
-        lname.sort()
-        space = 10 # cst columns size
-        print '%s %s %s' % ('name'.ljust(space), 'type'.ljust(space), 'size'.ljust(space))
-        for name in lname:
-            kind = WORLD[name][0]
-            if kind == 'var':
-                print '%s %s%s %s%s%s' % (name.ljust(space), 
-                  G, 'var'.ljust(space), 
-                  R, ('[%i]' % len(WORLD[name][1])).ljust(space), N)
-            elif kind == 'mat':
-                mode = len(WORLD[name][1])
-                h    = len(WORLD[name][1][0])
-                w    = len(WORLD[name][1][0][0])
-                if   mode == 1: mode = 'L'
-                elif mode == 3: mode = 'RGB'
-                else:           mode = 'RGBA'
-                print '%s %s%s %s%s%s' % (name.ljust(space), 
-                  G, 'mat'.ljust(space), 
-                  R, '[%ix%i %s]' % (w, h, mode), N)
-            elif kind == 'seq':
-                nbm  = len(WORLD[name][1])
-                mode = len(WORLD[name][1][0])
-                h    = len(WORLD[name][1][0][0])
-                w    = len(WORLD[name][1][0][0][0])
-                if   mode == 1: mode = 'L'
-                elif mode == 3: mode = 'RGB'
-                else:           mode = 'RGBA'
-                print '%s %s%s %s%s%s' % (name.ljust(space), 
-                  G, 'seq'.ljust(space), 
-                  R, '[%i mat %ix%i %s]' % (nbm, w, h, mode), N)
+        call_ls(args)
         continue
-
     if progname == 'ldir':
-        if len(args) > 0:
-            print '## listing of the current directory'
-            print '#  ldir'
-            continue
-        os.system('ls')
+        call_ldir(args)
         continue
-
     if progname == 'rm':
-        if len(args) == 0 or args[0] == '-h':
-            print '## remove variable'
-            print '#  rm all'
-            print '#  rm <name>'
-            print '#  rm <name> <name> ...'
-            print '#  rm <na*>'
-            continue
-        if   args[0] == 'all': args = WORLD.keys()
-        elif args[0].find('*') != -1:
-            lname   = WORLD.keys()
-            pattern = args[0].split('*')
-            if len(pattern) != 2:
-                outbox_error('Bad pattern')
-                continue
-            args = []
-            for name in lname:
-                if name.find(pattern[0]) != -1 and name.find(pattern[1]) != -1:
-                    args.append(name)
-            if len(args) == 0:
-                outbox_error('No variable matchs with the pattern')
-                continue
-            args.sort()
-            outbox_bang('%i variables match with the pattern' % len(args))
-            print args
-            answer = inbox_question('Agree to remove all of them')
-            if answer == 'n': continue
-
-        for name in args:
-            try: del WORLD[name]
-            except KeyError: outbox_exist(args[0])
+        call_rm(args)
         continue
-
     if progname == 'mv':
-        if len(args) != 2 or args[0] == '-h':
-            print '## move variable'
-            print '#  mv <source_name> <target_name>'
-            continue
-        try: data = WORLD[args[0]]
-        except KeyError:
-            outbox_exist(args[0])
-            continue
-        keys = WORLD.keys()
-        if args[1] in keys:
-            answer = inbox_overwrite(args[1])
-            if answer == 'n': continue
-        WORLD[args[1]] = data
-        del WORLD[args[0]]
-        del data
-        continue                
-
+        call_mv(args)
+        continue       
     if progname == 'cp':
-        if len(args) == 0 or len(args) > 2 or args[0] == '-h':
-            print '## copy variable'
-            print '#  cp <source_name> <target_name>'
-            continue
-        try: data = WORLD[args[0]]
-        except KeyError:
-            outbox_exist(args[0])
-            continue
-        keys = WORLD.keys()
-        if args[1] in keys:
-            answer = inbox_overwrite(args[1])
-            if answer == 'n': continue
-        WORLD[args[1]] = data
-        del data
+        call_cp(args)
         continue
-    
     if progname == 'mem':
-        if len(args) > 0:
-            print '## memories for all variables'
-            print '#  mem'
-            continue
-        space = 10
-        txt = ['', 'k', 'M', 'G', 'T']
-        lname = WORLD.keys()
-        for name in lname:
-            kind = WORLD[name][0]
-            if   kind == 'var':
-                size  = len(WORLD[name][1]) * 8
-            elif kind == 'mat':
-                mode = len(WORLD[name][1])
-                h    = len(WORLD[name][1][0])
-                w    = len(WORLD[name][1][0][0])
-                size = mode * w * h * 4
-            elif kind == 'seq':
-                nbm  = len(WORLD[name][1])
-                mode = len(WORLD[name][1][0])
-                h    = len(WORLD[name][1][0][0])
-                w    = len(WORLD[name][1][0][0][0])
-                size = mode * w * h * nbm * 4
-            ie    = int(log(size) // log(1e3))
-            size /= (1e3 ** ie)
-            size  = '%5.2f %sB' % (size, txt[ie])
-            print '%s %s%s %s%s%s' % (name.ljust(space), 
-                  G, kind.ljust(space), 
-                  R, size.ljust(space), N)
-
+        call_mem(args)
         continue
-
     if progname == 'fun':
-        if len(args) > 0:
-            print '## listing of functions in Astir'
-            print '#  fun'
-            continue
-        listfun.sort()
-        sfun = len(listfun)
-        nc   = 3  # cst 3 columns
-        if sfun % nc == 0: nl = sfun // nc
-        else:              nl = (sfun // nc) + 1
-        smax = 0
-        for i in xrange(sfun):
-            val = len(listfun[i])
-            if val > smax: smax = val
-        for i in xrange(nl):
-            txt = ''
-            for j in xrange(nc):
-                ind = j * nl + i
-                if ind < sfun: txt += '%s  ' % listfun[ind].ljust(smax)
-                else:          txt += ''
-            print txt
-
+        call_fun(args)
         continue
-
-    #=== input/output cmd =======
+    #=== input/output cmd
     if progname == 'save_var':
-        if len(args) != 2:
-            print '## save variable to file'
-            print '#  save_var <var> <filename>'
-            continue
-        lname = WORLD.keys()
-        name  = args[0]
-        fname = args[1]
-        if name not in lname:
-            outbox_exist(name)
-            continue
-        lname = os.listdir('.')
-        if fname in lname:
-            answer = inbox_overwrite(fname)
-            if answer == 'n': continue
-        f = open(fname, 'w')
-        local = ['var_astir', name, WORLD[name]]
-        cPickle.dump(local, f)
-        f.close()
+        call_save_var(args)
         continue
-    
     if progname == 'save_world':
-        if len(args) == 0 or len(args) > 1 or args[0] == '-h':
-            print '## save all variables in the same file'
-            print '#  save_world <filename>'
-            continue
-        kname = WORLD.keys()
-        if len(kname) == 0:
-            outbox_bang('Nothing to save')
-            continue
-        fname = args[0]
-        lname = os.listdir('.')
-        if fname in lname:
-            answer = inbox_overwrite(fname)
-            if answer == 'n': continue
-        f = open(fname, 'w')
-        local = ['world_astir', WORLD]
-        cPickle.dump(local, f)
-        f.close()
+        call_save_world(args)
         continue
-
     if progname == 'load_var':
-        if len(args) == 0 or len(args) > 1 or args[0] == '-h':
-            print '## load variable from file'
-            print '#  load_var <filename>'
-            continue
-        fname = args[0]
-        lname = os.listdir('.')
-        if fname not in lname:
-            outbox_exist(fname)
-            continue
-        f = open(fname, 'r')
-        try: local = cPickle.load(f)
-        except:
-            outbox_error('Can not open the file')
-            f.close()
-            continue
-        f.close()
-        if local[0] != 'var_astir':
-            outbox_error('Not Astir format')
-            continue
-        varname = local[1]
-        vardata = local[2]
-        lname   = WORLD.keys()
-        while varname in lname:
-            answer = inbox_overwrite(varname)
-            if answer == 'n': varname = inbox_input('Change to a new name:')
-            else: break
-        WORLD[varname] = vardata
+        call_load_var(args)
         continue
-
     if progname == 'load_world':
-        if len(args) == 0 or len(args) > 1 or args[0] == '-h':
-            print '## load all variables from file'
-            print '#  load_world <filename>'
-            continue
-        fname = args[0]
-        lname = os.listdir('.')
-        if fname not in lname:
-            outbox_exist(fname)
-            continue
-        f = open(fname, 'r')
-        try: local = cPickle.load(f)
-        except:
-            outbox_error('Can not open the file')
-            f.close()
-            continue
-        f.close()
-        if local[0] != 'world_astir':
-            outbox_error('Not Astir format')
-            continue
-        answer = inbox_question('All variables will be deleted, are you agree')
-        if answer == 'n': continue
-        del WORLD
-        WORLD = local[1]
+        call_load_world(args)
         continue
-
+    ## TO DEBUG
     if progname == 'add':
         name = args[0]
         size = int(args[1])
         V = [0] * size
         WORLD[name] = ['var', V]
         continue
-
-    #=== Pymir command =========
+    #=== Pymir command
     if progname == 'load_im':
-        if len(args) == 0 or len(args) > 1 or args[0] == '-h':
-            print '## load image from file'
-            print '#  Pymir function'
-            print '#  load_im <filename.[bmp, jpg, png]>'
-            print '#  load_im <filen*.bmp>'
-            continue
-
-        if args[0].find('*') != -1:
-            lname   = os.listdir('.')
-            pattern = args[0].split('*')
-            if len(pattern) != 2:
-                outbox_error('Bad pattern')
-                continue
-            mem = []
-            for name in lname:
-                if name.find(pattern[0]) != -1 and name.find(pattern[1]) != -1:
-                    mem.append(name)
-            if len(mem) == 0:
-                outbox_error('No image matchs with the pattern')
-                continue
-            fname = mem[0]
-            mem.sort()
-            outbox_bang('%i files match with the pattern' % len(mem))
-            print mem
-            answer = inbox_question('Agree to load all of them')
-            if answer == 'n': continue
-        else:
-            mem   = None
-            fname = args[0]
-
-        buf = fname.split('.')
-        if len(buf) == 2: name, ext = fname.split('.')
-        else:             name, ext = None, None
-        if ext not in ['bmp', 'jpg', 'png']:
-            outbox_error('Bad extension (bmp, jpg or png)')
-            continue
-        lname = os.listdir('.')
-        if fname not in lname:
-            outbox_exist(fname)
-            continue
-        lname = WORLD.keys()
-        while name in lname:
-            answer = inbox_overwrite(name)
-            if answer == 'n': name = inbox_input('Change to a new name:')
-            else: break
-        if mem is None:
-            im  = image_read(fname)
-            mat = image_im2mat(im)
-            del im
-            WORLD[name] = ['mat', mat]
-            del mat
-        else:
-            bar  = progress_bar(len(mem), sizebar, 'loading')
-            seq  = []
-            name = mem[0].split('.')[0]
-            i    = 0
-            for item in mem:
-                im  = image_read(item)
-                mat = image_im2mat(im)
-                seq.append(mat)
-                bar.update(i)
-                i += 1
-            del im, mat
-            WORLD[name] = ['seq', seq]
-            del seq
+        call_load_im(args)
         continue
-
     if progname == 'save_im':
-        if len(args) != 2:
-            print '## save image to file'
-            print '#  save_im <mat> <filename>'
-            continue
-        lname = WORLD.keys()
-        name  = args[0]
-        fname = args[1]
-        if name not in lname:
-            outbox_exist(name)
-            continue
-        if WORLD[name][0] != 'mat':
-            outbox_error('Only mat variable can be exported to image')
-            continue
-        lext = ['jpg', 'png', 'bmp']
-        ext = 'png'
-        if len(fname.split('.')) != 2:
-            outbox_bang('Must have an extension, set default to png')
-            ext = 'png'
-        else:
-            [fname, ext] = fname.split('.')
-            if ext not in lext:
-                outbox_error('Wrong extension, only jpg, png, or bmp')
-                continue
-        fname = fname + '.' + ext
-        lname = os.listdir('.')
-        if fname in lname:
-            answer = inbox_overwrite(fname)
-            if answer == 'n': continue
-        mat = WORLD[name][1]
-        im  = image_mat2im(mat)
-        del mat
-        image_write(im, fname)
-        del im
+        call_save_im(args)
         continue
-
     if progname == 'show_mat':
-        if len(args) == 0 or len(args) > 2 or args[0] == '-h':
-            print '## display mat as image'
-            print '#  show_mat <mat>'
-            print '#  show_mat <mat> g10'
-            continue
-        lname = WORLD.keys()
-        name  = args[0]
-        if name not in lname:
-            outbox_exist(name)
-            continue
-        if WORLD[name][0] != 'mat':
-            outbox_error('Only mat variable can be displayed')
-            continue
-        mat = WORLD[name][1]
-        im  = image_mat2im(mat)
-        if len(args) > 1:
-            if args[1][0] != 'g':
-                outbox_error('Argument %s incorrect' % args[1])
-                continue
-            else:
-                try: g = int(args[1][1:])
-                except:
-                    outbox_error('Argument %s incorrect' % args[1])
-                    continue
-                if g < 1 or g > 200:
-                    outbox_error('Argument g incorrect [1; 200]')
-                    continue
-                image_show_grid(im, g)
-                del g
-        else:
-            image_show(im)
-        
-            del im, mat
+        call_show_mat(args)
         continue
-
     if progname == 'color2gray':
-        if len(args) == 0 or len(args) > 2 or args[0] == '-h':
-            print '## convert mat color (RGB, RGBA)'
-            print '## to gray scale (Luminance)'
-            print '#  color2gray <mat>'
-            print '#  color2gray <mat> <new_mat>'
-            print '#  color2gray <seq>'
-            print '#  color2gray <seq> <new_seq>'
-            continue
-        lname = WORLD.keys()
-        src   = args[0]
-        if src not in lname:
-            outbox_exist(src)
-            continue
-        kind  = WORLD[src][0]
-        if kind not in ['mat', 'seq']:
-            outbox_error('Only mat or seq variable can be converted')
-            continue
-        if kind == 'mat':
-            if len(WORLD[src][1]) == 1:
-                outbox_error('Already in gray scale')
-                continue
-            if len(args) == 2:
-                trg = args[1]
-                while trg in lname:
-                    answer = inbox_overwrite(trg)
-                    if answer == 'n': trg == inbox_input('Change to a new name:')
-                    else: break
-            else: trg = src
-
-            im  = image_mat2im(WORLD[src][1])
-            im  = color_color2gray(im)
-            mat = image_im2mat(im)
-            WORLD[trg] = ['mat', mat]
-
-        else:
-            if len(WORLD[src][1][0]) == 1:
-                outbox_error('Already in gray scale')
-                continue
-            if len(args) == 2:
-                trg = args[1]
-                while trg in lname:
-                    answer = inbox_overwrite(trg)
-                    if answer == 'n': trg == inbox_input('Change to a new name:')
-                    else: break
-            else: trg = src
-            
-            nb   = len(WORLD[src][1])
-            bar  = progress_bar(nb, sizebar, 'Processing')
-            data = []
-            for n in xrange(nb):
-                im  = image_mat2im(WORLD[src][1][n])
-                im  = color_color2gray(im)
-                mat = image_im2mat(im)
-                data.append(mat)
-                bar.update(n)
-            WORLD[trg] = ['seq', data]
-            del data
-
-        del mat, im
+        call_color2gray(args)
         continue
-                
     if progname == 'seq2mat':
-        if len(args) != 3 or args[0] == '-h':
-            print '## unpack a sequence to a mat'
-            print '#  seq2mat <seq> 5 <basename_mat>'
-            print '#  seq2mat <seq> 2:4 <basename_mat>'
-            print '#  seq2mat <seq> all <basename_mat>'
-            print '%  seq2mat test 2:4 res'
-            continue
-        lname = WORLD.keys()
-        src   = args[0]
-        id    = args[1]
-        trg   = args[2]
-        if src not in lname:
-            outbox_exist(src)
-            continue
-        if WORLD[src][0] != 'seq':
-            outbox_error('Only seq variable can be converted')
-            continue
-        id   = id.split(':')
-        size = len(WORLD[src][1])
-        if len(id) == 1:
-            if id[0] == 'all':
-                id = range(size)
-            else:
-                try: id = int(id[0])
-                except:
-                     outbox_error('Range value incorrect')
-                     continue
-                if id < 0 or id >= size:
-                    outbox_error('Value is out of range [0, %i]' % size)
-                    continue
-                while trg in lname:
-                    answer = inbox_overwrite(trg)
-                    if answer == 'n': trg == inbox_input('Change to a new name')
-                    else: break
-                mat = WORLD[src][1][id]
-                WORLD[trg] = ['mat', mat]
-                continue
-        else:
-            try: start, stop = int(id[0]), int(id[1])
-            except:
-                outbox_error('Range value incorrect')
-                continue
-            if start < 0 or stop >= size:
-                outbox_error('Values are out of range [0, %i]' % size)
-                continue
-            id = range(start, stop + 1)
-
-        for i in id:
-            mat = WORLD[src][1][i]
-            WORLD[trg + '%03i' % i] = ['mat', mat]
-  
+        call_seq2mat(args)
         continue    
-        
-        
-                    
-
-            
