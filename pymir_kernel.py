@@ -112,7 +112,7 @@ def image_show_grid(image, dgrid, color = 'red'):
     image_show(image)
 
 # V0.1 2009-03-06 16:26:57 JB
-def image_show_getwin(image, sw, nbpts):
+def image_show_get_win(image, sw, nbpts):
     '''
     Display PIL image data to window Tkinter form in order
     to select some points with the mouse to define windows work
@@ -124,9 +124,14 @@ def image_show_getwin(image, sw, nbpts):
     from Tkinter import Tk, Canvas
     from PIL     import ImageTk, Image
     import sys
+
+    global x, y
+    x, y = 0, 0
     
     def callback(event):
         print event.x, event.y
+        global x, y
+        x, y = event.x, event.y
 
     try:
         # window
@@ -142,6 +147,8 @@ def image_show_getwin(image, sw, nbpts):
     except:
         print 'Impossible to display image.'
         sys.exit()
+
+    return [[y, x]]
 
 # V0.1 2008-12-23 10:59:13 JB
 # V0.2 2008-12-27 09:35:47 JB
@@ -344,12 +351,12 @@ def image_mat2im(mat):
         im.putdata(mat)
         return im
     else:
-        r   = r * 255
-        g   = g * 255
-        b   = b * 255
-        r   = list(reshape(mat[0], (nbp)))
-        g   = list(reshape(mat[1], (nbp)))
-        b   = list(reshape(mat[2], (nbp)))
+        r   = mat[0] * 255
+        g   = mat[1] * 255
+        b   = mat[2] * 255
+        r   = list(reshape(r, (nbp)))
+        g   = list(reshape(g, (nbp)))
+        b   = list(reshape(b, (nbp)))
         imr = Image.new('L', (w, h), 255)
         img = Image.new('L', (w, h), 255)
         imb = Image.new('L', (w, h), 255)
