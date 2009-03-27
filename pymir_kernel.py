@@ -76,9 +76,9 @@ def image_show(image):
         win  = Tk()
         w, h = image.size
         surf = Canvas(win, width = w, height = h, bg = 'white')
+        surf.pack(side='left')
         bmp  = ImageTk.PhotoImage(image)
-        item = surf.create_image(w//2, h//2, image = bmp)
-        surf.grid(row = 1, column = 1, rowspan = 1, padx = 0, pady = 0)
+        item = surf.create_image(0, 0, image = bmp, anchor='nw')
         win.mainloop()
     except:
         print 'Impossible to display image.'
@@ -112,26 +112,36 @@ def image_show_grid(image, dgrid, color = 'red'):
     image_show(image)
 
 # V0.1 2009-03-06 16:26:57 JB
-def image_show_get_win(image, sw, nbpts):
+# V0.2 2009-03-27 13:48:27 JB
+global g_p, g_i
+def image_show_get_pts(image, nbpts):
     '''
     Display PIL image data to window Tkinter form in order
-    to select some points with the mouse to define windows work
+    to select some points with the mouse.
     => [image] PIL image data
-    => [sw]    Window size
-    => [nbpts] Number of points (windows) required
+    => [nbpts] Number of points required
     <= [pts]   List of points [[y0, x0], [y1, x1], ..., [yi, xi]]
     '''
     from Tkinter import Tk, Canvas
     from PIL     import ImageTk, Image
     import sys
 
-    global x, y
-    x, y = 0, 0
-    
+    global g_p, g_i
+    g_p = [[0, 0] for i in xrange(nbpts)]
+    g_i = 0
+
     def callback(event):
-        print event.x, event.y
-        global x, y
+        global g_p, g_i
         x, y = event.x, event.y
+        x -= 4 # bordure
+        y -= 4 # bordure
+        if x < 0:  x = 0
+        if y < 0:  y = 0
+        if x >= w: x = w - 1
+        if y >= h: y = h - 1
+        g_p[g_i][1], g_p[g_i][0] = x, y
+        g_i += 1
+        if g_i >= nbpts: win.destroy()
 
     try:
         # window
@@ -139,8 +149,7 @@ def image_show_get_win(image, sw, nbpts):
         w, h = image.size
         surf = Canvas(win, width = w, height = h, bg = 'white')
         bmp  = ImageTk.PhotoImage(image)
-        item = surf.create_image(w//2, h//2, image = bmp)
-        surf.grid(row = 1, column = 1, rowspan = 1, padx = 0, pady = 0)
+        item = surf.create_image(0, 0, image = bmp, anchor='nw')
         surf.bind('<Button-1>', callback)
         surf.pack()
         win.mainloop()
@@ -148,7 +157,7 @@ def image_show_get_win(image, sw, nbpts):
         print 'Impossible to display image.'
         sys.exit()
 
-    return [[y, x]]
+    return g_p
 
 # V0.1 2008-12-23 10:59:13 JB
 # V0.2 2008-12-27 09:35:47 JB
@@ -208,14 +217,16 @@ def image_plot_match_points(im1, im2, m1, m2, kind = 'pointlink', color = 'black
     return im1
 
 # V0.1 2008-12-21 00:10:17 JB
+# V0.2 2009-03-27 15:51:50 JB
 def image_plot_points(im, pts, kind = 'point', color = 'red'):
     '''
     Plot list of points to PIL image.
     => [im]    PIL image data
     => [pts]   list of points [[y0, x0], [y1, x1], ..., [yi, xi]]
-    => <kind>  kind of plot, 'target': circles centered to the points,
-               or 'point': only pixels set to points position
-               (default 'target')
+    => <kind>  kind of plot, 'target': circles and one pixel centered to the points,
+               'point': circles centered to the points,
+               'pixel': only pixels set to point position
+               (default 'point')
     => <color> color plot ('red', 'blue' or 'green') (default 'red')
     <= im      PIL image data with points plotted
     '''
@@ -232,14 +243,22 @@ def image_plot_points(im, pts, kind = 'point', color = 'red'):
     if kind == 'target':
         rad = 3
         for n in xrange(len(pts)):
-            draw.point((pts[n, 1], pts[n, 0]), fill=(255, 0, 0))
-            draw.ellipse((pts[n, 1] - rad, pts[n, 0] - rad, pts[n, 1] + rad, pts[n, 0] + rad), outline=col)
+            x = pts[n][1] + 3 # border
+            y = pts[n][0] + 3
+            draw.point((x, y), fill=col)
+            draw.ellipse((x - rad, y - rad, x + rad, y + rad), outline=col)
     
     elif kind == 'point':
         rad = 2
         for n in xrange(len(pts)):
-            draw.ellipse((pts[n, 1] - rad, pts[n, 0] - rad, pts[n, 1] + rad, pts[n, 0] + rad), fill=col)
-
+            x = pts[n][1] + 3 # border
+            y = pts[n][0] + 3
+            draw.ellipse((x - rad, y - rad, x + rad, y + rad), fill=col)
+    elif kind == 'pixel':
+        for n in xrange(len(pts)):
+            x = pts[n][1] + 3 # border
+            y = pts[n][0] + 3
+            draw.point((x, y), fill=col)
     else:
         print 'Image plot, kind of plot unknows.'
         sys.exit()
@@ -272,7 +291,11 @@ def image_plot_lines(im, l1, l2, color = 'black'):
     else:                  col = (0,     0,   0)
 
     for n in xrange(len(l1)):
-        draw.line([int(l1[n, 1]), int(l1[n, 0]), int(l2[n, 1]), int(l2[n, 0])], fill = col)
+        l1x = int(l1[n][1]) + 3 # border
+        l1y = int(l1[n][0]) + 3
+        l2x = int(l2[n][1]) + 3
+        l2y = int(l2[n][0]) + 3
+        draw.line([l1x, l1y, l2x, l2y], fill = col)
 
     del draw
 
@@ -407,6 +430,15 @@ def color_color2gray(im):
     <= im gray PIL image data
     '''
     return im.convert('L')
+
+# V0.1 2009-03-27 15:41:14 JB
+def color_gray2color(im):
+    '''
+    Convert gray image to color image
+    => [im] color PIL image data
+    <= im gray PIL image data
+    '''
+    return im.convert('RGB')
 
 # V0.1 2008-12-20 21:11:38 JB
 def color_norm_gray(mat):
@@ -599,18 +631,18 @@ def space_harris(im):
     return space_non_max_supp(M, 5)
 
 # V0.1 2009-03-09 11:42:34 JB
-def space_reg_ave(lmat, p, sw, tx, ty):
+def space_reg_ave(lmat, p, ws, tx, ty):
     from numpy import zeros, ones
     xt, yt  = 0, 0
-    w       = len(lmat[0][0])
-    h       = len(lmat[0])
+    w       = len(lmat[0][0][0])
+    h       = len(lmat[0][0])
     nb_mat  = len(lmat)
-    ave_mat = lmat[0].copy()
+    ave_mat = lmat[0][0].copy()
     mask    = ones((h, w))
     for i in xrange(nb_mat - 1):
-        mat1     = lmat[i].copy()
-        mat2     = lmat[i + 1].copy()
-        xp, yp   = space_align(mat1, mat2, p, sw, tx, ty)
+        mat1     = lmat[i][0].copy()
+        mat2     = lmat[i + 1][0].copy()
+        xp, yp   = space_align(mat1, mat2, p, ws, tx, ty)
 
         p[0][0] += yp
         p[0][1] += xp

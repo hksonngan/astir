@@ -12,8 +12,10 @@
 
 from   pymir_kernel import image_read, image_write
 from   pymir_kernel import image_im2mat, image_mat2im
-from   pymir_kernel import image_show, image_show_grid
-from   pymir_kernel import color_color2gray
+from   pymir_kernel import image_show, image_show_grid, image_show_get_pts
+from   pymir_kernel import image_plot_points, image_plot_lines
+from   pymir_kernel import color_color2gray, color_gray2color
+from   pymir_kernel import space_reg_ave
 from   math import log
 import os, sys, optparse
 import readline # allow to back line in the shell
@@ -24,7 +26,7 @@ import cPickle
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
-           'seq2mat']
+           'seq2mat', 'ave_reg_mat']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -692,6 +694,54 @@ res002
 
     return 1
 
+def call_ave_reg_mat(args):
+    '''
+This function use a simple registration to match images together
+and compute the averages. The sequence of matrices must be in gray scale.
+
+ave_reg_mat <seq_name> <dx> <dy> <ws>
+
+dx: is the translation range search on x (x-dx to x+dx)
+dy: is the translation range search on y (y-dy to y+dy)
+ws: window size used to track translation between images (must be odd)
+
+ave_reg_mat im 10 10 35
+    '''
+    if len(args) != 4:
+        print call_ave_reg_mat.__doc__
+        return 0
+    lname = WORLD.keys()
+    src   = args[0]
+    if src not in lname:
+        outbox_exist(src)
+        return -1
+    kind = WORLD[src][0]
+    if kind != 'seq':
+        outbox_error('Only seq variable can be used')
+        return -1
+    dx = int(args[1])
+    dy = int(args[2])
+    ws = int(args[3])
+    if ws % 2 == 0:
+        ws += 1
+        outbox_bang('Window size must be odd, set to %i' % ws)
+    mat = WORLD[src][1][0]
+    im  = image_mat2im(mat)
+    p   = image_show_get_pts(im, 1)
+    print 'point selected:', p[0]
+    dw  = (ws - 1) // 2
+    x   = p[0][1]
+    y   = p[0][0]
+    l1  = [[y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw], [y+dw, x-dw]]
+    l2  = [[y+dw, x-dw], [y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw]]
+    im  = color_gray2color(im)
+    im  = image_plot_lines(im, l1, l2, 'red')
+    im  = image_plot_points(im, p, 'pixel')
+    image_show(im)
+    ave = space_reg_ave(WORLD[src][1], p, ws, dx, dy)
+    WORLD['ave_' + src] = ['mat', [ave]]
+    return 1
+
 #=== shell io ===================
 
 ct_cmd = 1
@@ -787,3 +837,6 @@ while 1:
     if progname == 'seq2mat':
         call_seq2mat(args)
         continue    
+    if progname == 'ave_reg_mat':
+        call_ave_reg_mat(args)
+        continue
