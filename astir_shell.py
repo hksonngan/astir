@@ -26,7 +26,7 @@ import cPickle
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
-           'seq2mat', 'ave_reg_mat']
+           'seq2mat', 'seq_reg_ave']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -694,7 +694,7 @@ res002
 
     return 1
 
-def call_ave_reg_mat(args):
+def call_seq_reg_ave(args):
     '''
 This function use a simple registration to match images together
 and compute the averages. The sequence of matrices must be in gray scale.
@@ -708,7 +708,7 @@ ws: window size used to track translation between images (must be odd)
 ave_reg_mat im 10 10 35
     '''
     if len(args) != 4:
-        print call_ave_reg_mat.__doc__
+        print call_seq_reg_ave.__doc__
         return 0
     lname = WORLD.keys()
     src   = args[0]
@@ -837,6 +837,7 @@ while 1:
     if progname == 'seq2mat':
         call_seq2mat(args)
         continue    
-    if progname == 'ave_reg_mat':
-        call_ave_reg_mat(args)
+    if progname == 'seq_reg_ave':
+        call_seq_reg_ave(args)
         continue
+
