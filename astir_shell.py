@@ -26,7 +26,7 @@ import cPickle
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
-           'seq2mat', 'seq_reg_ave']
+           'seq2mat', 'seq_reg_ave', 'load_vid']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -742,6 +742,56 @@ ave_reg_mat im 10 10 35
     WORLD['ave_' + src] = ['mat', [ave]]
     return 1
 
+def call_load_vid(args):
+    '''
+Load video (avi file only) to a sequence
+load_vid <video_name> <frame_per_second>
+    '''
+    if len(args) != 2:
+        print call_load_vid.__doc__
+        return 0
+    lname    = os.listdir('.')
+    filename = args[0]
+    freq     = int(args[1])
+    if filename not in lname:
+        outbox_exist(filename)
+        return -1
+    name, ext = filename.split('.')
+    if ext != 'avi':
+        outbox_error('Must be an avi file')
+        return -1
+    lname = WORLD.keys()
+    while name in lname:
+        answer = inbox_overwrite(name)
+        if answer == 'n': name = inbox_input('Change to a new name:')
+        else: break
+    print 'Extract images...'
+    pattern = '.tmp_astir_'
+    try:
+        os.system('ffmpeg -i %s -r %i -f image2 "%s%%4d.png"' % (filename, freq, pattern))
+    except:
+        outbox_error('Impossible to extract images from the video')
+        return -1
+    lname = os.listdir('.')
+    mem   = []
+    for file in lname:
+        if file.find(pattern) != -1: mem.append(file)
+    bar = progress_bar(len(mem), sizebar, 'loading')
+    seq = []
+    i   = 0
+    for item in mem:
+        im  = image_read(item)
+        mat = image_im2mat(im)
+        seq.append(mat)
+        bar.update(i)
+        i += 1
+    del im, mat
+    WORLD[name] = ['seq', seq]
+    del seq
+    os.system('rm -f %s*' % pattern)
+    
+    return 1
+
 #=== shell io ===================
 
 ct_cmd = 1
@@ -827,6 +877,9 @@ while 1:
         continue
     if progname == 'save_im':
         call_save_im(args)
+        continue
+    if progname == 'load_vid':
+        call_load_vid(args)
         continue
     if progname == 'show_mat':
         call_show_mat(args)

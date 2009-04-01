@@ -8,6 +8,7 @@
 
 ## IMAGE ####################
 # V0.1 2008-11-30 23:00:30 JB 
+# V0.2 2009-03-31 20:32:03 JB
 def image_read(name):
     '''
     Read an image from file, return PIL data.
@@ -16,12 +17,14 @@ def image_read(name):
     '''
     import string, os, Image, sys
 
+    # I assume the checkin is done at the top level
+    #
     # check entry
-    listext = ['png', 'bmp', 'jpg']
-    ext     = string.lower(name.split('.')[-1])
-    if ext not in listext:
-            print 'The image file must be %s format.' % listext
-            sys.exit()
+    #listext = ['png', 'bmp', 'jpg']
+    #ext     = string.lower(name.split('.')[-1])
+    #if ext not in listext:
+    #        print 'The image file must be %s format.' % listext
+    #        sys.exit()
 
     # read image
     try:
