@@ -19,7 +19,7 @@ from   pymir_kernel import space_reg_ave
 from   math import log
 import os, sys, optparse
 import readline # allow to back line in the shell
-import cPickle
+import cPickle, atexit
 
 #=== constants ==================
 
@@ -41,6 +41,16 @@ sizebar = 32
 
 # WORLD structure: WORLD['keyname'] = [header, data]
 WORLD  = {}
+
+# read history
+readline.set_history_length(500)
+histfile = os.path.join(os.environ["HOME"], ".astir_history")
+try:
+    readline.read_history_file(histfile)
+except IOError:
+    pass
+# save always before exit, even when sys.exit is raised
+atexit.register(readline.write_history_file, histfile)
 
 #=== shell functions ============
 def inbox_overwrite(name):
@@ -794,22 +804,47 @@ load_vid <video_name> <frame_per_second>
 
 #=== shell io ===================
 
+# script kernel
+script_flag = False
+script_end  = False
+if len(sys.argv) != 1:
+    script_name = sys.argv[1]
+    dummy, ext  = script_name.split('.')
+    if ext != 'sas':
+        outbox_error('This file %s is not a Script Astir Shell (.sas).' % script_name)
+        sys.exit()
+    script_flag = True
+    list_cmd = open(script_name, 'r').readlines()
+
+# if mode shell
+if script_flag:
+    print '** Script Astir Shell V1.0 **'
+else:
+    print '  ___      _   _'
+    print ' / _ \    | | (_)'         
+    print '/ /_\ \___| |_ _ _ __' 
+    print '|  _  / __| __| | \'__)'
+    print '| | | \__ \ |_| | |'
+    print '\_| |_/___/\__|_|_|'
+
+    print '** Astir Shell V1.0 **\n'
+
+
 ct_cmd = 1
-
-print '  ___      _   _'
-print ' / _ \    | | (_)'         
-print '/ /_\ \___| |_ _ _ __' 
-print '|  _  / __| __| | \'__)'
-print '| | | \__ \ |_| | |'
-print '\_| |_/___/\__|_|_|'
-
-print '** Astir Shell V1.0 **\n'
-
-while 1:
-    try: cmd = raw_input('%sastir%s %i%s %%%s ' % (B, GB, ct_cmd, G, N))
-    except:
-        print '\nbye'
-        sys.exit(0)
+while 1 and not script_end:
+    if script_flag:
+        cmd = list_cmd[ct_cmd - 1]
+        if cmd[0] == '#':
+            ct_cmd += 1
+            continue
+        print '%s%s%s' % (B, cmd.strip('\n'), N)
+        if ct_cmd == len(list_cmd):
+            script_end = True
+    else:
+        try: cmd = raw_input('%sastir%s %i%s %%%s ' % (B, GB, ct_cmd, G, N))
+        except:
+            print '\nbye'
+            sys.exit(0)
 
     if not cmd: continue
 
