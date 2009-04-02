@@ -802,6 +802,29 @@ load_vid <video_name> <frame_per_second>
     
     return 1
 
+'''
+#=== documentation ==============
+print call_ls.__doc__
+print call_ldir.__doc__
+print call_rm.__doc__
+print call_mv.__doc__
+print call_cp.__doc__
+print call_mem.__doc__
+print call_fun.__doc__
+print call_save_var.__doc__
+print call_save_world.__doc__
+print call_load_var.__doc__
+print call_load_world.__doc__
+print call_load_im.__doc__
+print call_save_im.__doc__
+print call_show_mat.__doc__
+print call_color2gray.__doc__
+print call_seq2mat.__doc__
+print call_seq_reg_ave.__doc__
+print call_load_vid.__doc__
+sys.exit()
+'''
+
 #=== shell io ===================
 
 # script kernel
