@@ -59,6 +59,13 @@ try:
 except:
     info.write('[E]\n')
 
+info.write('ImageTk........')
+try:
+    from PIL import ImageTk
+    info.write('[ok]\n')
+except:
+    info.write('[E]\n')
+
 info.write('ImageDraw......')
 try:
     import ImageDraw
@@ -79,4 +86,16 @@ try:
     info.write('[ok]\n')
 except:
     info.write('[E]\n')
+
+info.write('FFmpeg.........')
+import commands
+res = commands.getoutput('ffmpeg -version')
+if res.find('version') != -1:
+    #res = res.split('\n')[0]
+    #res = res.split()
+    #info.write('[ok] version %s\n' % res[2])
+    info.write('[ok]\n')
+else:
+    info.write('[E]\n')
+
 
