@@ -156,7 +156,7 @@ Extract les matrices im002, im003 et im004 depuis la sequence vid1 :
 Extract la totalite des matrices provenant de la sequence vid1 :
 % seq2mat vid1 all im
     
-[ave_reg_mat]
+[seq_reg_ave]
 Cette fonction permet de calculer la moyenne d'un ensemble de matrices
 en les recallants une a une. Elle ne s'applique qu'au sequence de
 matrice de type [seq]. Pour chaque paires voisine des matrices de la
@@ -183,7 +183,7 @@ centre uniquement la ou est l'objet. Toujours choisir une taille de
 fenetre impaire, sinon son centre n'est pas un entier or une image est
 composee de pixel.
 
-ave_reg_mat <seq_name> <dx> <dy> <ws>
+seq_reg_ave <seq_name> <dx> <dy> <ws>
 
 dx: la translation du champ de recherche sur l'axe des x (debute a x-dx jusqu'a x+dx)
 dy: la translation du champ de recherche sur l'axe des y (debute a y-dy jusqu'a y+dy)
@@ -197,8 +197,15 @@ position de la fenetre choisie. Le programme commence au moment ou
 vous fermez la fenetre. Exemple avec une recherche de 5 pixels autour
 d'un point avec une fenetre carre de 35 pixels.
 
-% ave_reg_mat vid1 5 5 35
+% seq_reg_ave vid1 5 5 35
     
-Load video (avi file only) to a sequence
+[load_vid]
+Charge une sequence en memoire a partir d'une video (seulement les
+fichiers avi)
+
 load_vid <video_name> <frame_per_second>
     
+Exemple avec la video saturne avec un nombre d'image par seconde de
+10:
+
+% load_vid saturne.avi 10

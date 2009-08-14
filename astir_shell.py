@@ -709,13 +709,13 @@ def call_seq_reg_ave(args):
 This function use a simple registration to match images together
 and compute the averages. The sequence of matrices must be in gray scale.
 
-ave_reg_mat <seq_name> <dx> <dy> <ws>
+seq_reg_ave <seq_name> <dx> <dy> <ws>
 
 dx: is the translation range search on x (x-dx to x+dx)
 dy: is the translation range search on y (y-dy to y+dy)
 ws: window size used to track translation between images (must be odd)
 
-ave_reg_mat im 10 10 35
+seq_reg_ave im 10 10 35
     '''
     if len(args) != 4:
         print call_seq_reg_ave.__doc__
