@@ -87,6 +87,13 @@ try:
 except:
     info.write('[E]\n')
 
+info.write('Scipy..........')
+try:
+    import scipy
+    info.write('[ok]\n')
+except:
+    info.write('[E]\n')
+
 info.write('FFmpeg.........')
 import commands
 res = commands.getoutput('ffmpeg -version')
