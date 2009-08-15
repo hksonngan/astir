@@ -1135,3 +1135,19 @@ def stats_LMS_trans(p1, p2):
 
     return pr1, pr2
     
+## RESTORATION #############################
+
+# V0.1 2009-08-15 04:26:02 JB
+def resto_wiener(mat):
+    '''
+    Wiener filter from scipy
+    => [mat]    Numpy array
+    <= wmat     Numpy array after restoration by Wiener filter
+    '''
+    from scipy.signal import wiener
+    #im  = image_im2mat(im)
+    res = wiener(mat)
+    #res = image_mat2im(res)
+
+    return res
+    

@@ -1,0 +1,280 @@
+********************************
+* pymir_kernel.py     VERSION  *
+********************************
+* Version: 0.40
+* Date   : 2009-08-15
+* Authors: JB
+
+## IMAGE ####################
+V0.2 image_read
+V0.1 image_write
+V0.1 image_show
+V0.1 image_show_grid
+VX.X image_show_get_pts
+V0.2 image_plot_match_points
+V0.2 image_plot_points
+V0.1 image_plot_lines
+V0.2 image_im2mat
+V0.2 image_mat2im
+V0.1 image_anaglyph
+
+## COLOR ####################
+V0.1 color_color2gray
+V0.1 color_gray2color
+V0.1 color_norm_gray
+
+## SPACE ####################
+V0.1 space_gauss
+V0.1 space_conv
+V0.2 space_conv_im
+V0.1 space_non_max_supp
+V0.1 space_harris_ctl
+V0.1 space_harris_th
+V0.1 space_harris
+V0.1 space_reg_ave
+V0.1 space_align
+V0.1 lucas_kanade
+V0.2 space_match_points
+
+## STATISTICS ####################
+V0.1 stats_dist_pts
+V0.1 stats_ori_pts
+V0.1 stats_hist
+V0.1 stats_hist_clean_ori_pts
+V0.2 stats_ransac_trans
+V0.1 stats_list_stat
+V0.1 stats_LMS_trans
+
+## RESTORATION #############################
+V0.1 resto_wiener
+
+********************************
+*        DOCUMENTATION         *
+********************************
+
+## IMAGE ####################
+image_read(name):
+    Read an image from file, return PIL data.
+    => [name] image filename (png, bmp or jpg)
+    <= im     PIL image data
+
+image_write(im, name):
+    Write PIL image data to file format
+    => [im]   PIL image data
+    => [name] Filename to export the image (might be png, bmp or jpg)
+    <= nothing
+
+image_show(image):
+    Display PIL image data to window Tkinter form.
+    => [image] PIL image data
+    <= nothing
+
+image_show_grid(image, dgrid, color = 'red'):
+    Display PIL image data to window Tkinter form, and draw
+    a grid with an interspace define byd dgrid.
+    => [image] PIL image data
+    => [dgrid] Interspace of the grid
+    => <color> Link color: 'black', 'red', 'green', 'white' or 'blue'
+               (default red)
+    <= nothing
+
+image_show_get_pts(image, nbpts):
+    Display PIL image data to window Tkinter form in order
+    to select some points with the mouse.
+    => [image] PIL image data
+    => [nbpts] Number of points required
+    <= [pts]   List of points [[y0, x0], [y1, x1], ..., [yi, xi]]
+
+image_plot_match_points(im1, im2, m1, m2, kind = 'pointlink', color = 'black'):
+    Plot the two lists of points matched to PIL image data.
+    => [im1]   PIL image data link with p1
+    => [im2]   PIL image data link with p2
+    => [m1]    list of points matched with [m2] from [im1],
+               [[m1_x0, m1_y0], [m1_x1, m1_y1], ..., [m1_xi, m1_yi]]
+    => [m2]    list of points matched with [m1] from [im2],
+               [[m2_x0, m2_y0], [m2_x1, m2_y1], ..., [m2_xi, m2_yi]]
+    => <kind>  kind of plot:
+               'point'     plot list of points [m1] and [m2] on [im1] with points
+               'link'      plot list of points [m1] and [m2] on [im1] with lines
+               'pointlink' plot list of points [m1] and [m2] on [im1+im2] with points and lines
+               (default 'pointlink')
+    => <color> link color: 'black', 'red', 'green', 'white' or 'blue'
+               (default black)
+    <= im      PIL image data with points plotted
+
+image_plot_points(im, pts, kind = 'point', color = 'red'):
+    Plot list of points to PIL image.
+    => [im]    PIL image data
+    => [pts]   list of points [[y0, x0], [y1, x1], ..., [yi, xi]]
+    => <kind>  kind of plot, 'target': circles and one pixel centered to the points,
+               'point': circles centered to the points,
+               'pixel': only pixels set to point position
+               (default 'point')
+    => <color> color plot ('red', 'blue' or 'green') (default 'red')
+    <= im      PIL image data with points plotted
+
+image_plot_lines(im, l1, l2, color = 'black'):
+    Plot the lines according list of points to PIL image data.
+    => [im]    PIL image
+    => [l1]    list of points (head of the lines),
+               [[l1_y0, l1_x0], [l1_y1, l1_x1], ..., [l1_yi, l1_xi]]
+    => [l2]    list of points (tail of the lines),
+               [[l2_y0, l2_x0], [l2_y1, l2_x1], ..., [l2_yi, l2_xi]]
+    => <color> link color: 'black', 'red', 'green', 'white' or 'blue'
+               (default black)
+    <= im      PIL image data with lines plotted
+
+image_im2mat(im):
+    Transform PIL image to Numpy array (gray, RGB , and RGBA images)
+    => [im] PIL image data
+    <= mat  Numpy array, [l], [r, g, b] or [r, g, b, a]
+
+image_mat2im(mat):
+    Transform Numpy array to PIL image (gray, RGB, and RGBA images)
+    => [mat] Numpy array [l], [r, g, b], or [r, g, b, a]
+    <= im    PIL image data
+
+image_anaglyph(imr, iml):
+    Create anaglyph image (3D) from right and left images, return image
+    => [imr] right PIL image data
+    => [iml] left PIL image data
+    <= anaglyphe PIL image data
+
+## COLOR ####################
+color_color2gray(im):
+    Convert color image to gray image
+    => [im] color PIL image data
+    <= im gray PIL image data
+
+color_gray2color(im):
+    Convert gray image to color image
+    => [im] color PIL image data
+    <= im gray PIL image data
+
+color_norm_gray(mat):
+    Normalize gray scale color of a numpy array (0 to 255)
+    => [mat] Numpy array
+    <= mat   Numpy array normalized
+
+## SPACE ####################
+space_gauss(w, sig):
+    Create the 2D Gaussienne matrix (numpy array)
+    => [w]   window size, must be odd
+    => [sig] sigma value to the Gauss function
+    <= mat   Numpy array
+
+space_conv(matim, mat):
+    Space convolution between two matrices (numpy format)
+    => [matim] Numpy array as image
+    => [mat]   Numpy array as convolution matrix
+    <= res     Numpy array, result of the convolution (same size as [matim])
+
+space_conv_im(im, mat):
+    Space convolution between image and a matrix
+    => [im]  PIL image data
+    => [mat] Numpy array as convolution matrix
+    <= res   PIL image data, result of the convolution (same size as [im])
+
+
+space_non_max_supp(mat, sw):
+    Extract local maximum value to Numpy matrix
+    => [mat] input Numpy array
+    => [sw]  size of window local research (must be odd)
+    <= res   Numpy array with local maximum value
+
+space_harris_ctl(mat, nb_pts):
+    Control threshold loop to harris matrix, this function return
+    the corner feature according the number of points desired.
+    => [mat]    Numpy array given by Harris detector
+    => [nb_pts] number of points desired
+    <= pts      list of features selected [[y0, x0], [y1, x1], ..., [yi, xi]]
+
+space_harris_th(mat, th):
+    Extract corner feature according the value matrix
+    given by Harris detector and a threshold
+    => [mat] Numpy array given by Harris detector
+    => [th]  threshold value used to extract features
+    <= pts   list of features selected [[y0, x0], [y1, x1], ..., [yi, xi]]
+
+space_harris(im):
+    Harris detector
+    => [im] PIL image data
+    <= res  Numpy array, response of the corner detector
+
+lucas_kanade(im1, im2, p, sw, maxit):
+    Lucas-Kanade
+    !!! DRAFT !!!
+
+space_match_points(im1, im2, p1, p2, sw, kind='full'):
+    Match list of points p1 with list of points p2 according
+    texture distance of windows centered to each point. All points are
+    search and distance is define as Squared Euclidean.
+    => [im1]  PIL image data as image 1
+    => [im2]  PIL image data as image 2
+    => [p1]   list of points p1 from [mat1], [[y0, x0], ..., [yi, xi]]
+    => [p2]   list of points p2 from [mat2], [[y0, x0], ..., [yi, xi]]
+    => [sw]   size of window in order to calculate the distance, must be odd (window centered to point)
+    => [kind] kind of window, 'full' or 'cha' (default 'full')
+    <= m1     list of points m1 order with match list of points m2
+    <= m2     list of points m2 order with match list of points m1
+    m1 = [[m1_y0, m1_x0], [m1_y1, m1_x1], ..., [m1_xi, m1_yi]]
+                |               |                    |
+    m2 = [[m2_y0, m2_x0], [m2_y1, m2_x1], ..., [m2_xi, m2_yi]]
+
+## STATISTICS ####################
+stats_dist_pts(pts1, pts2):
+    Return list of distances between list of points pts1 and pts2
+    => [pts1] Numpy list [[y0, x0], ..., [yi, xi]]
+    => [pts2] Numpy list [[y0, x0], ..., [yi, xi]]
+    <= [d]    Numpy list of distance between pts1 and pts2 [d0, ..., di]
+              Euclidean distance
+
+stats_ori_pts(pts1, pts2, kind = '-pi+pi'):
+    Return the orientation angle composed by the vector pts1 and pts2.
+    The point pts1 is defined as base and pts2 as head.
+    => [pts1]  Numpy list of base points vector [[y0, x0], ..., [yi, xi]]
+    => [pts2]  Numpy list of head points vector [[y0, x0], ..., [yi, xi]]
+    => <kind>  orientation angle range: '-pi+pi' or '02pi' (default '-pi+pi')
+    <= [alpha] Numpy list of vector orientation in degree [a0, ..., ai]
+
+stats_hist(list_val, step):
+    Return histogram of the input list of values
+    => [list_val] list of values
+    => [step]     number of groups in the histogram
+    <= [hist]     list of value of population bar graph
+    <= [x]        list of value of step bar graph
+
+stats_ransac_trans(p1, p2, th, nbcons, maxit):
+    RANSAC algorithm for a translation model (tx, ty)
+    => [p1]     Numpy list of points match with [p2]
+    => [p2]     Numpy list of points match with [p1]
+    => [th]     threshold consensus fitting model (in pixel))
+    => [nbcons] number of elements required in consensus set
+    => [maxit]  maximum iterations, if 'auto' test all points
+    <= [tx, ty] model found
+    <= [err]    SSE between model and consensus set
+    <= [ID]     list of ID pts in the best consensus set
+
+stats_list_stat(val):
+    Return some stats value from a list of values
+    => [val] list of value (1d)
+    <= [min] value min
+    <= [max] value max
+    <= [ave] average value
+    <= [std] standard deviation value
+
+stats_LMS_trans(p1, p2):
+    LMS algorithm for a translation model (tx, ty)
+    => [p1]     Numpy list of points match with [p2]
+    => [p2]     Numpy list of points match with [p1]
+    <= [tx, ty] model found
+    <= [err]    SSE between model and consensus set
+    <= [ID]     list of ID pts in the best consensus set
+
+## RESTORATION #############################
+resto_wiener(mat):
+    Wiener filter from scipy
+    => [mat]    Numpy array
+    <= wmat     Numpy array after restoration by Wiener filter
+
+-=: Generated by pypack Sat Aug 15 04:57:45 2009 :=-

@@ -16,6 +16,7 @@ from   pymir_kernel import image_show, image_show_grid, image_show_get_pts
 from   pymir_kernel import image_plot_points, image_plot_lines
 from   pymir_kernel import color_color2gray, color_gray2color
 from   pymir_kernel import space_reg_ave
+from   pymir_kernel import resto_wiener
 from   math import log
 import os, sys, optparse
 import readline # allow to back line in the shell
@@ -26,7 +27,7 @@ import cPickle, atexit
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
-           'seq2mat', 'seq_reg_ave', 'load_vid']
+           'seq2mat', 'seq_reg_ave', 'load_vid', 'wiener']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -802,6 +803,31 @@ load_vid <video_name> <frame_per_second>
     
     return 1
 
+def call_wiener(args):
+    '''
+Image restoration by Wiener filter
+wiener <mat_source_name> <mat_res_name>
+    '''
+    if len(args) != 2:
+        print call_wiener.__doc__
+        return 0
+    src   = args[0]
+    trg   = args[1]
+    lname = WORLD.keys()
+    if src not in lname:
+        outbox_exist(src)
+        return -1
+    if trg in lname:
+        answer = inbox_overwrite(trg)
+        if answer == 'n': return 0
+    if WORLD[src][0] != 'mat':
+        outbox_error('Only mat variable can be used')
+        return -1
+    res = resto_wiener(WORLD[src][1])
+    WORLD[trg] = ['mat', res]
+
+    return 1
+
 '''
 #=== documentation ==============
 print call_ls.__doc__
@@ -822,6 +848,7 @@ print call_color2gray.__doc__
 print call_seq2mat.__doc__
 print call_seq_reg_ave.__doc__
 print call_load_vid.__doc__
+print call_wiener.__doc__
 sys.exit()
 '''
 
@@ -951,4 +978,6 @@ while 1 and not script_end:
     if progname == 'seq_reg_ave':
         call_seq_reg_ave(args)
         continue
-
+    if progname == 'wiener':
+        call_wiener(args)
+        continue
