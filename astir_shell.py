@@ -15,7 +15,7 @@ from   pymir_kernel import image_im2mat, image_mat2im
 from   pymir_kernel import image_show, image_show_grid, image_show_get_pts
 from   pymir_kernel import image_plot_points, image_plot_lines
 from   pymir_kernel import color_color2gray, color_gray2color
-from   pymir_kernel import space_reg_ave
+from   pymir_kernel import space_reg_ave#, space_mosaicing
 from   pymir_kernel import resto_wiener
 from   math import log
 import os, sys, optparse
@@ -27,7 +27,7 @@ import cPickle, atexit
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
-           'seq2mat', 'seq_reg_ave', 'load_vid', 'wiener']
+           'seq2mat', 'seq_reg_ave', 'load_vid', 'wiener', 'mosaicing']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -750,7 +750,7 @@ seq_reg_ave im 10 10 35
     im  = image_plot_points(im, p, 'pixel')
     image_show(im)
     ave = space_reg_ave(WORLD[src][1], p, ws, dx, dy)
-    WORLD['ave_' + src] = ['mat', [ave]]
+    WORLD['ave_' + src] = ['mat', ave]
     return 1
 
 def call_load_vid(args):
@@ -828,6 +828,54 @@ wiener <mat_source_name> <mat_res_name>
 
     return 1
 
+def call_mosaicing(args):
+    '''
+Create mosaicing from two images
+mosaicing <mat_1> <mat_2>
+    '''
+    mat1 = WORLD[args[0]][1]
+    mat2 = WORLD[args[1]][1]
+    ws   = 35
+
+    im  = image_mat2im(mat1)
+    p1  = image_show_get_pts(im, 1)
+    print 'point selected:', p1[0]
+    dw  = (ws - 1) // 2
+    x   = p1[0][1]
+    y   = p1[0][0]
+    l1  = [[y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw], [y+dw, x-dw]]
+    l2  = [[y+dw, x-dw], [y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw]]
+    im  = color_gray2color(im)
+    im  = image_plot_lines(im, l1, l2, 'red')
+    im  = image_plot_points(im, p1, 'pixel')
+    image_show(im)
+
+    im  = image_mat2im(mat2)
+    p2  = image_show_get_pts(im, 1)
+    print 'point selected:', p2[0]
+    dw  = (ws - 1) // 2
+    x   = p2[0][1]
+    y   = p2[0][0]
+    l1  = [[y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw], [y+dw, x-dw]]
+    l2  = [[y+dw, x-dw], [y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw]]
+    im  = color_gray2color(im)
+    im  = image_plot_lines(im, l1, l2, 'red')
+    im  = image_plot_points(im, p2, 'pixel')
+    image_show(im)
+
+    from pymir_kernel import space_align 
+    xp, yp = space_align(mat1[0], mat2[0], p1, 35, 5, 5, p2)
+    print xp, yp
+
+    #space_merge
+  
+    return 1
+
+    res = space_mosaicing(mat1, mat2)
+    WORLD['res'] = ['mat', res]
+
+
+
 '''
 #=== documentation ==============
 print call_ls.__doc__
@@ -849,6 +897,7 @@ print call_seq2mat.__doc__
 print call_seq_reg_ave.__doc__
 print call_load_vid.__doc__
 print call_wiener.__doc__
+print call_mosaicing.__doc__
 sys.exit()
 '''
 
@@ -980,4 +1029,8 @@ while 1 and not script_end:
         continue
     if progname == 'wiener':
         call_wiener(args)
+        continue
+
+    if progname == 'mosaicing':
+        call_mosaicing(args)
         continue

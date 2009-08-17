@@ -447,15 +447,16 @@ def color_gray2color(im):
 def color_norm_gray(mat):
     '''
     Normalize gray scale color of a numpy array (0 to 255)
-    => [mat] Numpy array
+    => [mat] Numpy array L or RGB
     <= mat   Numpy array normalized
     '''
-    vmin, vmax = mat.min(), mat.max()
-    s = 1.0 / abs(vmin - vmax)
-    print vmin, vmax, s
+    norm = []
+    for c in xrange(len(mat)):
+        vmin, vmax = mat[c].min(), mat[c].max()
+        s    = 1.0 / abs(vmin - vmax)
+        tmp  = (mat[c] - vmin) * s
+        norm.append(tmp)
 
-    norm = (mat - vmin) * s
- 
     return norm
 
 ## SPACE ####################
@@ -622,6 +623,7 @@ def space_harris(im):
     dy  = dx.transpose()
     im  = color_color2gray(im)
     mat = image_im2mat(im)
+    print mat
     Ix  = space_conv(mat, dx)
     Iy  = space_conv(mat, dy)
     G   = space_gauss(13, 2)
@@ -631,37 +633,60 @@ def space_harris(im):
     M   = (Ix2 * Iy2 - Ixy * Ixy) - 0.04 * (Ix2 + Iy2) ** 2 
     M   = color_norm_gray(M)
     
-    return space_non_max_supp(M, 5)
+    return space_non_max_supp(M, 7)
 
 # V0.1 2009-03-09 11:42:34 JB
-def space_reg_ave(lmat, p, ws, tx, ty):
+# V0.2 2009-08-17 10:26:06 JB
+def space_reg_ave(lmat, p, ws, tx, ty, N = -1):
+    '''
+    Images average after registration by grid alignment
+    => [lmat] list of images (numarray [L] or [R, G, B])
+    => [p]    feature point tracked [[y, x]]
+    => [ws]   window size tracked (must be odd)
+    => [tx]   delta x to align (from p-tx to p+tx)
+    => [ty]   delta y to align (from p-ty to p+ty)
+    => <N>    number of images used in lmat list (default -1 meaning all)
+    <= ave    result average (numarry only luminance)
+    '''
     from numpy import zeros, ones
     xt, yt  = 0, 0
-    w       = len(lmat[0][0][0])
-    h       = len(lmat[0][0])
-    nb_mat  = len(lmat)
-    ave_mat = lmat[0][0].copy()
+    dummy   = lmat[0]
+    mode    = len(dummy)
+    h, w    = dummy[0].shape
+    if N == -1: nb_mat  = len(lmat)
+    else:       nb_mat  = N
+    ave_mat = lmat[0]
     mask    = ones((h, w))
-    for i in xrange(nb_mat - 1):
-        mat1     = lmat[i][0].copy()
-        mat2     = lmat[i + 1][0].copy()
+    for n in xrange(nb_mat - 1):
+        if mode == 1:
+            mat1 = lmat[n][0].copy()
+            mat2 = lmat[n + 1][0].copy()
+        elif mode == 3:
+            im1  = image_mat2im(lmat[n])
+            im2  = image_mat2im(lmat[n + 1])
+            im1  = color_color2gray(im1)
+            im2  = color_color2gray(im2)
+            mat1 = image_im2mat(im1)[0]
+            mat2 = image_im2mat(im2)[0]
+
         xp, yp   = space_align(mat1, mat2, p, ws, tx, ty)
 
         p[0][0] += yp
         p[0][1] += xp
         xt      += xp
         yt      += yp
-        print 'im:', i, i + 1, 'dx:', xp, 'dy:', yp
+        print 'im:', n, n + 1, 'dx:', xp, 'dy:', yp
 
         for j in xrange(h):
             for i in xrange(w):
                 xm = i - xt
                 ym = j - yt
                 if xm > 0 and xm < w and ym > 0 and ym < h:
-                    ave_mat[ym, xm]  = ave_mat[ym, xm] + mat2[j, i]
+                    for c in xrange(mode):
+                        ave_mat[c][ym, xm] = ave_mat[c][ym, xm] + lmat[n + 1][c][j, i]
                     mask[ym, xm]    += 1
 
-    ave_mat = ave_mat / float(nb_mat)
+    for c in xrange(mode): ave_mat[c] = ave_mat[c] / float(nb_mat)
  
     j = 0
     while j < h:
@@ -688,13 +713,16 @@ def space_reg_ave(lmat, p, ws, tx, ty):
 
     print ct_w, ct_h
  
-    crop = zeros((ct_h, ct_w))
+    if   mode == 1: crop = [zeros((ct_h, ct_w))]
+    elif mode == 3: crop = [zeros((ct_h, ct_w)), zeros((ct_h, ct_w)), zeros((ct_h, ct_w))]
     ct_i, ct_j = 0, 0
     for j in xrange(h):
         ct_i = 0
         for i in xrange(w):
             if mask[j, i] == nb_mat:
-                crop[ct_j, ct_i] = ave_mat[j, i]
+                for c in xrange(mode):
+                    crop[c][ct_j, ct_i] = ave_mat[c][j, i]
+
                 ct_i += 1
         if ct_i != 0: ct_j += 1
           
@@ -703,19 +731,42 @@ def space_reg_ave(lmat, p, ws, tx, ty):
     return crop
 
 # V0.1 2009-03-07 11:33:27 JB
-def space_align(I1, I2, p, sw, tx, ty):
+def space_align(I1, I2, p1, sw, tx, ty, p2 = -1):
+    '''
+    Gridding aligment method between two images
+    => [I1]   image 1 (numarray only luminance)
+    => [I2]   image 2 (numarray only luminance)
+    => [p1]   feature point tracked [[y, x]]
+    => [sw]   window size tracked (must be odd)
+    => [tx]   delta x to align (from p-tx to p+tx)
+    => [ty]   delta y to align (from p-ty to p+ty)
+    => <p2>   if the feature point tracked is known in the second image,
+              in this case used to refine the alignment (see mosaicing),
+              (default -1 meanning same position as p1)
+    <= xp, yp relative alignment parameters
+    '''
+
     # I1 and I2 are mat
     rad  = sw // 2
-    xi   = p[0][1]
-    yi   = p[0][0]
+    x1   = p1[0][1]
+    y1   = p1[0][0]
     w    = len(I1[0])
     h    = len(I1)
-    i1   = I1[yi - rad:yi + rad + 1, xi - rad:xi + rad + 1]
+    print w, h
+    print y1-rad, y1+rad+1, x1-rad, x1+rad+1
+    i1   = I1[y1 - rad:y1 + rad + 1, x1 - rad:x1 + rad + 1]
+
     xp   = 0
     yp   = 0
     vmin = 1e9
-    for y in xrange(yi - ty, yi + ty + 1):
-        for x in xrange(xi - tx, xi + tx + 1):
+    if p2 == -1:
+        x2 = x1
+        y2 = y1
+    else:
+        x2 = p2[0][1]
+        y2 = p2[0][0]
+    for y in xrange(y2 - ty, y2 + ty + 1):
+        for x in xrange(x2 - tx, x2 + tx + 1):
             i2 = I2[y - rad:y + rad + 1, x - rad:x + rad + 1]
             e  = (i2 - i1)
             e  = e * e
@@ -725,7 +776,24 @@ def space_align(I1, I2, p, sw, tx, ty):
                 xp, yp = x, y
             #print 'x:', x, 'y:', y, 'v:', v
 
-    return xp - xi, yp - yi
+    return xp - x1, yp - y1
+
+# V0.1 2009-08-16 13:08:05 JB
+def space_merge(I1, I2, dp, mode):
+    '''
+    Merge two images into another one according their alignment parameters
+    => [I1]   image 1 (numarray L or RGB)
+    => [I2]   image 2 (numarray L or RGB)
+    => [dp]   relative alignment parameters [dy, dx]
+    => [mode] number of chanels (1, luminance, 3, RGB, or n)
+    <= I3     result image L or RGB
+    '''
+    from numpy import zeros
+    if mode == 1:
+        h1, w1 = I1.size
+        h2, w2 = I2.size
+        dh, dw = dp
+        nh     = 1
 
 # V0.1 2009-03-06 14:13:46 JB
 def lucas_kanade(im1, im2, p, sw, maxit):
