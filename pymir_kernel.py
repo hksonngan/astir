@@ -779,21 +779,49 @@ def space_align(I1, I2, p1, sw, tx, ty, p2 = -1):
     return xp - x1, yp - y1
 
 # V0.1 2009-08-16 13:08:05 JB
-def space_merge(I1, I2, dp, mode):
+def space_merge(I1, I2, dp):
     '''
     Merge two images into another one according their alignment parameters
-    => [I1]   image 1 (numarray L or RGB)
-    => [I2]   image 2 (numarray L or RGB)
+    => [I1]   image 1 (numarray [L] or [R, G, B])
+    => [I2]   image 2 (numarray [L] or [R, G, B])
     => [dp]   relative alignment parameters [dy, dx]
-    => [mode] number of chanels (1, luminance, 3, RGB, or n)
     <= I3     result image L or RGB
     '''
     from numpy import zeros
-    if mode == 1:
-        h1, w1 = I1.size
-        h2, w2 = I2.size
-        dh, dw = dp
-        nh     = 1
+    mode = len(I1)
+    h1, w1 = I1[0].shape
+    h2, w2 = I2[0].shape
+    dh, dw = dp
+    nh, nw = h1 + abs(dh), w1 + abs(dw)
+    if   mode == 1: res = [zeros((nh, nw))]
+    elif mode == 3: res = [zeros((nh, nw)), zeros((nh, nw)), zeros((nh, nw))]
+
+    if   dh < 0:  d1h, d2h = 0, -dh
+    elif dh > 0:  d1h, d2h = dh, 0
+    elif dh == 0: d1h, d2h = 0, 0
+
+    if   dw < 0:  d1w, d2w = 0, -dw
+    elif dw > 0:  d1w, d2w = dw, 0
+    elif dw == 0: d1w, d2w = 0, 0
+
+    for c in xrange(mode):
+        for h in xrange(h1):
+            for w in xrange(w1):
+                res[c][h + d1h, w + d1w] = I1[c][h, w]
+
+    for c in xrange(mode):
+        for h in xrange(h1):
+            for w in xrange(w1):
+                pix = res[c][h + d2h, w + d2w]
+                if pix != 0:
+                    pix += I2[c][h, w]
+                    pix /= 2.0
+                    res[c][h + d2h, w + d2w] = I2[c][h, w]
+                else: pix = I2[c][h, w]
+                
+                res[c][h + d2h, w + d2w] = pix
+
+    return res
 
 # V0.1 2009-03-06 14:13:46 JB
 def lucas_kanade(im1, im2, p, sw, maxit):

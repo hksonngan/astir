@@ -15,7 +15,7 @@ from   pymir_kernel import image_im2mat, image_mat2im
 from   pymir_kernel import image_show, image_show_grid, image_show_get_pts
 from   pymir_kernel import image_plot_points, image_plot_lines
 from   pymir_kernel import color_color2gray, color_gray2color
-from   pymir_kernel import space_reg_ave#, space_mosaicing
+from   pymir_kernel import space_reg_ave, space_merge
 from   pymir_kernel import resto_wiener
 from   math import log
 import os, sys, optparse
@@ -867,14 +867,10 @@ mosaicing <mat_1> <mat_2>
     xp, yp = space_align(mat1[0], mat2[0], p1, 35, 5, 5, p2)
     print xp, yp
 
-    #space_merge
-  
-    return 1
-
-    res = space_mosaicing(mat1, mat2)
+    res = space_merge(mat1, mat2, [yp, xp])
     WORLD['res'] = ['mat', res]
 
-
+    return 1
 
 '''
 #=== documentation ==============
