@@ -790,6 +790,7 @@ load_vid <video_name> <frame_per_second>
     bar = progress_bar(len(mem), sizebar, 'loading')
     seq = []
     i   = 0
+    mem.sort()
     for item in mem:
         im  = image_read(item)
         mat = image_im2mat(im)
