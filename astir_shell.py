@@ -27,7 +27,8 @@ import cPickle, atexit
 listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var', 
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
-           'seq2mat', 'seq_reg_ave', 'load_vid', 'wiener', 'mosaicing']
+           'seq2mat', 'seq_reg_ave', 'load_vid', 'wiener', 'mosaicing',
+           'cut_seq']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -873,6 +874,69 @@ mosaicing <mat_1> <mat_2>
 
     return 1
 
+def call_cut_seq(args):
+    '''
+Cut a part of sequence to another sequence, start and stop
+specifies the part you want keep
+
+cut_seq <seq_name> <start_num:stop_num> <new_seq_name>
+
+cut_seq vid1 :24 vid2   # keep only first image to 24
+cut_seq vid1 10:24 vid2 # keep 10 to 24
+cut_seq vid1 :24 vid2   # keep 10 to last image
+    '''
+
+    if len(args) != 3:
+        print call_cut_seq.__doc__
+        return 0
+    
+    lname = WORLD.keys()
+    src   = args[0]
+    if src not in lname:
+        outbox_exist(src)
+        return -1
+    if WORLD[src][0] != 'seq':
+        outbox_error('Only seq variable can be used')
+        return -1
+    
+    data = WORLD[src][1]
+    N    = len(data)
+    pos  = args[1]
+    if len(pos) == 1:
+        outbox_error('Wrong argument: %s' % pos)
+        return -1
+
+    if   pos[0]  == ':':
+        start = 0
+        stop  = int(pos.split(':')[-1])
+    elif pos[-1] == ':':
+        start = int(pos.split(':')[0])
+        stop  = N - 1
+    else:
+        start = int(pos.split(':')[0])
+        stop  = int(pos.split(':')[-1])
+
+    if start < 0:
+        start = 0
+        outbox_bang('Start number must be > 0')
+    if stop  >= N:
+        stop  = N - 1
+        outbox_bang('Stop number must be < %i' % N)
+
+    trg = args[2]
+    if trg in lname:
+        answer = inbox_overwrite(trg)
+        if answer == 'n': return 0
+
+    seq = []
+    for n in xrange(start, stop + 1):
+        seq.append(data[n])
+    WORLD[trg] = ['seq', seq]
+    del data
+
+    return 1
+
+
 '''
 #=== documentation ==============
 print call_ls.__doc__
@@ -895,6 +959,7 @@ print call_seq_reg_ave.__doc__
 print call_load_vid.__doc__
 print call_wiener.__doc__
 print call_mosaicing.__doc__
+print call_cut_seq.__doc__
 sys.exit()
 '''
 
@@ -914,7 +979,7 @@ if len(sys.argv) != 1:
 
 # if mode shell
 if script_flag:
-    print '** Script Astir Shell V1.0 **'
+    print '** Script Astir Shell V0.34 **'
 else:
     print '  ___      _   _'
     print ' / _ \    | | (_)'         
@@ -923,7 +988,7 @@ else:
     print '| | | \__ \ |_| | |'
     print '\_| |_/___/\__|_|_|'
 
-    print '** Astir Shell V1.0 **\n'
+    print '** Astir Shell V0.34 **\n'
 
 
 ct_cmd = 1
@@ -1027,7 +1092,9 @@ while 1 and not script_end:
     if progname == 'wiener':
         call_wiener(args)
         continue
-
     if progname == 'mosaicing':
         call_mosaicing(args)
+        continue
+    if progname == 'cut_seq':
+        call_cut_seq(args)
         continue
