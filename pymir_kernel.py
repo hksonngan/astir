@@ -490,6 +490,67 @@ def space_gauss(w, sig):
 
     return mat
 
+# V0.1 2009-08-21 05:59:24 JB
+def space_mask_blending(h, w, a, b, c):
+    '''
+    Mask blending
+    => [h] size image
+    => [w] size image
+    => [a] alpha
+    => [b] beta
+    => [c] gamma
+    <= mask numpy array only luminance
+    More details see Bert 2007 thesis p121
+    '''
+    from numpy import zeros
+    maskw = zeros((h, w))
+    aw    = int(a * w) // 2
+    bw    = int(b * w) // 2
+    cw    = int(c * w) // 2
+    vw    = []
+    for x in xrange(aw, bw):
+        vw.append(x / float(bw - aw) + aw / float(aw - bw))
+    for x in xrange(bw, cw):
+        vw.append(1.0)
+
+    for line in xrange(h):
+        maskw[line, aw:cw] = vw
+    aw = w - aw
+    cw = w - cw
+    vw.sort(reverse = True)
+    for line in xrange(h):
+        maskw[line, cw:aw] = vw
+
+    maskh = zeros((h, w))
+    ah    = int(a * h) // 2
+    bh    = int(b * h) // 2
+    ch    = int(c * h) // 2
+    vh    = []
+    for y in xrange(ah, bh):
+        vh.append(y / float(bh - ah) + ah / float(ah - bh))
+    for y in xrange(bh, ch):
+        vh.append(1.0)
+
+    for col in xrange(w):
+        maskh[ah:ch, col] = vh
+    ah = h - ah
+    ch = h - ch
+    vh.sort(reverse = True)
+    for col in xrange(w):
+        maskh[ch:ah, col] = vh
+
+    # fix bug if image is odd
+    if w % 2 == 1:
+        cw = (w - 1) // 2
+        for y in xrange(h): maskw[y, cw] = 1.0
+    if h % 2 == 1:
+        ch = (h - 1) // 2
+        for x in xrange(w): maskh[ch, x] = 1.0
+
+    mask = maskw * maskh
+
+    return mask
+
 # V0.1 2008-12-20 20:07:41 JB
 def space_conv(matim, mat):
     '''
@@ -752,8 +813,6 @@ def space_align(I1, I2, p1, sw, tx, ty, p2 = -1):
     y1   = p1[0][0]
     w    = len(I1[0])
     h    = len(I1)
-    print w, h
-    print y1-rad, y1+rad+1, x1-rad, x1+rad+1
     i1   = I1[y1 - rad:y1 + rad + 1, x1 - rad:x1 + rad + 1]
 
     xp   = 0
@@ -779,47 +838,93 @@ def space_align(I1, I2, p1, sw, tx, ty, p2 = -1):
     return xp - x1, yp - y1
 
 # V0.1 2009-08-16 13:08:05 JB
-def space_merge(I1, I2, dp):
+def space_merge(I1, I2, p1, p2, method = 'ave'):
     '''
     Merge two images into another one according their alignment parameters
-    => [I1]   image 1 (numarray [L] or [R, G, B])
-    => [I2]   image 2 (numarray [L] or [R, G, B])
-    => [dp]   relative alignment parameters [dy, dx]
-    <= I3     result image L or RGB
+    => [I1]     image 1 (numarray [L] or [R, G, B])
+    => [I2]     image 2 (numarray [L] or [R, G, B])
+    => [p1]     interest point to image 1 [[y1, x1]]
+    => [p2]     same interst point p1 to image 2 [[y2, x2]]
+    => [method] merging mode 'ave' average or 'ada' adaptative
+    <= I3       result image L or RGB
     '''
     from numpy import zeros
-    mode = len(I1)
+    mode   = len(I1)
+    y1, x1 = p1[0][0], p1[0][1]
+    y2, x2 = p2[0][0], p2[0][1]
     h1, w1 = I1[0].shape
     h2, w2 = I2[0].shape
-    dh, dw = dp
-    nh, nw = h1 + abs(dh), w1 + abs(dw)
-    if   mode == 1: res = [zeros((nh, nw))]
-    elif mode == 3: res = [zeros((nh, nw)), zeros((nh, nw)), zeros((nh, nw))]
-
-    if   dh < 0:  d1h, d2h = 0, -dh
-    elif dh > 0:  d1h, d2h = dh, 0
-    elif dh == 0: d1h, d2h = 0, 0
-
-    if   dw < 0:  d1w, d2w = 0, -dw
-    elif dw > 0:  d1w, d2w = dw, 0
-    elif dw == 0: d1w, d2w = 0, 0
-
+    # changing ref
+    l1, t1 = -x1, -y1
+    l2, t2 = -x2, -y2
+    r1, b1 = w1 - x1 - 1, h1 - y1 - 1
+    r2, b2 = w2 - x2 - 1, h2 - y2 - 1
+    # size res image
+    lr = min(l1, l2)
+    tr = min(t1, t2)
+    rr = max(r1, r2)
+    br = max(b1, b2)
+    hr = br - tr + 1
+    wr = rr - lr + 1
+    if   mode == 1: res = [zeros((hr, wr))]
+    elif mode == 3: res = [zeros((hr, wr)), zeros((hr, wr)), zeros((hr, wr))]
+    # paste first images
     for c in xrange(mode):
         for h in xrange(h1):
+            href = h - y1
+            hglo = href - tr
             for w in xrange(w1):
-                res[c][h + d1h, w + d1w] = I1[c][h, w]
+                wref = w - x1
+                wglo = wref - lr
+                #res[c][hglo, wglo] = (res[c][hglo, wglo] + I1[c][h, w]) / 2.0
+                res[c][hglo, wglo] = I1[c][h, w]
+
+    # paste the second one
+    for c in xrange(mode):
+        for h in xrange(h2):
+            href = h - y2
+            hglo = href - tr
+            for w in xrange(w2):
+                wref = w - x2
+                wglo = wref - lr
+                #res[c][hglo, wglo] = (res[c][hglo, wglo] + I2[c][h, w]) / 2.0
+                res[c][hglo, wglo] = I2[c][h, w]
+
+    if method == 'ave': return res
+
+    mask1  = space_mask_blending(h1, w1, 0, 0.8, 1.0)
+    # in ref
+    lo  = max(l1, l2)
+    to  = max(t1, t2)
+    ro  = min(r1, r2)
+    bo  = min(b1, b2)
+    # in image
+    lo1 = lo + x1
+    to1 = to + y1
+    lo2 = lo + x2
+    to2 = to + y2
+    # in global
+    log = lo - lr
+    rog = ro - lr
+    tog = to - tr
+    bog = bo - tr
+    
+    wo  = rog - log + 1
+    ho  = bog - tog + 1
 
     for c in xrange(mode):
-        for h in xrange(h1):
-            for w in xrange(w1):
-                pix = res[c][h + d2h, w + d2w]
-                if pix != 0:
-                    pix += I2[c][h, w]
-                    pix /= 2.0
-                    res[c][h + d2h, w + d2w] = I2[c][h, w]
-                else: pix = I2[c][h, w]
-                
-                res[c][h + d2h, w + d2w] = pix
+        for h in xrange(ho):
+            iog = log
+            io1 = lo1
+            io2 = lo2
+            for w in xrange(wo):
+                res[c][tog, iog] = (1 - mask1[to1, io1]) * I2[c][to2, io2] + mask1[to1, io1] * I1[c][to1, io1]
+                iog += 1
+                io1 += 1
+                io2 += 1
+            tog += 1
+            to1 += 1
+            to2 += 1
 
     return res
 

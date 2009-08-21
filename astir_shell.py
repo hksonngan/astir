@@ -867,9 +867,10 @@ mosaicing <mat_1> <mat_2>
 
     from pymir_kernel import space_align 
     xp, yp = space_align(mat1[0], mat2[0], p1, 35, 5, 5, p2)
-    print xp, yp
+    p2[0][0] = p1[0][0] + yp
+    p2[0][1] = p1[0][1] + xp
 
-    res = space_merge(mat1, mat2, [yp, xp])
+    res = space_merge(mat1, mat2, p1, p2)
     WORLD['res'] = ['mat', res]
 
     return 1
@@ -979,7 +980,7 @@ if len(sys.argv) != 1:
 
 # if mode shell
 if script_flag:
-    print '** Script Astir Shell V0.34 **'
+    print '** Script Astir Shell V0.36 **'
 else:
     print '  ___      _   _'
     print ' / _ \    | | (_)'         
@@ -988,7 +989,7 @@ else:
     print '| | | \__ \ |_| | |'
     print '\_| |_/___/\__|_|_|'
 
-    print '** Astir Shell V0.34 **\n'
+    print '** Astir Shell V0.36 **\n'
 
 
 ct_cmd = 1
