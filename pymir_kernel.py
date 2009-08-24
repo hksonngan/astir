@@ -75,56 +75,99 @@ def image_show(images):
     from math    import sqrt, ceil
     import sys
 
-    #try:
-    # cst
-    wmax = 1024
-    hmax = 600
-    
-    # define the grid
-    v   = len(images)
-    nbl = sqrt(3 * v / 4.0)
-    nbc = ceil(nbl * 4 / 3.0)
-    if v % nbc == 0: nbl = v // nbc
-    else:            nbl = (v // nbc) + 1
-    nbc, nbl = int(nbc), int(nbl)
-    # prepare images
-    stepw  = wmax // nbc
-    steph  = hmax // nbl
-    thumbs = []
-    for image in images:
+    def fit(image, wmax, hmax):
         w, h = image.size
         r    = w / float(h)
         flag = False
-        if w > stepw:
-            w = stepw
+        if w > wmax:
+            w = wmax
             h = int(w / r)
             flag = True
-        if h > steph:
-            h = steph
+        if h > hmax:
+            h = hmax
             w = int(h * r)
             flag = True
-
+        
         if flag:
             image = image.resize((w, h)) # default nearest
-            thumbs.append(image)
-        else:
-            thumbs.append(image)
+            
+        return image, w, h
 
-    # merge images
-    map  = Image.new('RGB', (wmax, hmax), (0, 0, 0))
-    
-    i, ic, il = 0, 0, 0    
-    while i < v:
-        im     = thumbs[i]
-        w, h   = im.size
-        iw, ih = ic*stepw, il*steph
-        map.paste(im, (iw, ih, iw+w, ih+h))
-        ic += 1
-        if ic >= nbc:
-            ic  = 0
-            il += 1
+    def one_image(images, wmax, hmax):
+        image = images[0]
+        return fit(image, wmax, hmax)
+        
+    def two_images(images, wmax, hmax):
+        im1, w1, h1 = fit(images[0], wmax // 2, hmax)
+        im2, w2, h2 = fit(images[1], wmax // 2, hmax)
+        wmax        = w1 + w2
+        hmax        = max(h1, h2)
+        map         = Image.new('RGB', (wmax, hmax), (0, 0, 0))
+        dh          = (hmax - h1) // 2
+        print dh
+        map.paste(im1, (0,  dh, w1, h1 + dh))
+        dh          = (hmax - h2) // 2
+        print dh
+        map.paste(im2, (w1, dh, w1 + w2, h2 + dh))
 
-        i += 1
+        return map, wmax, hmax
+ 
+    def n_images(images, wmax, hmax):
+        nbl = sqrt(3 * v / 4.0)
+        nbc = ceil(nbl * 4 / 3.0)
+        if v % nbc == 0: nbl = v // nbc
+        else:            nbl = (v // nbc) + 1
+        nbc, nbl = int(nbc), int(nbl)
+        # prepare images
+        stepw  = wmax // nbc
+        steph  = hmax // nbl
+        thumbs = []
+        for image in images:
+            w, h = image.size
+            r    = w / float(h)
+            flag = False
+            if w > stepw:
+                w = stepw
+                h = int(w / r)
+                flag = True
+            if h > steph:
+                h = steph
+                w = int(h * r)
+                flag = True
+
+            if flag:
+                image = image.resize((w, h)) # default nearest
+                thumbs.append(image)
+            else:
+                thumbs.append(image)
+
+        # merge images
+        map  = Image.new('RGB', (wmax, hmax), (0, 0, 0))
+
+        i, ic, il = 0, 0, 0    
+        while i < v:
+            im     = thumbs[i]
+            w, h   = im.size
+            iw, ih = ic*stepw, il*steph
+            map.paste(im, (iw, ih, iw+w, ih+h))
+            ic += 1
+            if ic >= nbc:
+                ic  = 0
+                il += 1
+
+            i += 1
+
+        return thumbs
+
+    # cst
+    wmax = 1024
+    hmax = 600
+    if not isinstance(images, list): images = [images]
+    v   = len(images)
+
+    # prepare images
+    if   v == 1: map, wmax, hmax = one_image(images,  hmax, wmax)
+    elif v == 2: map, wmax, hmax = two_images(images, hmax, wmax)
 
     # window
     win  = Tk()
@@ -945,7 +988,7 @@ def space_merge(I1, I2, p1, p2, method = 'ave'):
 
     if method == 'ave': return res
 
-    mask1  = space_mask_blending(h1, w1, 0, 0.5)
+    mask1  = space_mask_blending(h1, w1, 0, 0.2)
     # in ref
     lo  = max(l1, l2)
     to  = max(t1, t2)
