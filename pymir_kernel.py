@@ -491,7 +491,7 @@ def space_gauss(w, sig):
     return mat
 
 # V0.1 2009-08-21 05:59:24 JB
-def space_mask_blending(h, w, a, b, c):
+def space_mask_blending(h, w, a, b, c = 1.0):
     '''
     Mask blending
     => [h] size image
@@ -849,6 +849,8 @@ def space_merge(I1, I2, p1, p2, method = 'ave'):
     <= I3       result image L or RGB
     '''
     from numpy import zeros
+    I1     = color_norm_gray(I1)
+    I2     = color_norm_gray(I2)
     mode   = len(I1)
     y1, x1 = p1[0][0], p1[0][1]
     y2, x2 = p2[0][0], p2[0][1]
@@ -892,7 +894,7 @@ def space_merge(I1, I2, p1, p2, method = 'ave'):
 
     if method == 'ave': return res
 
-    mask1  = space_mask_blending(h1, w1, 0, 0.8, 1.0)
+    mask1  = space_mask_blending(h1, w1, 0, 0.5)
     # in ref
     lo  = max(l1, l2)
     to  = max(t1, t2)
@@ -913,18 +915,26 @@ def space_merge(I1, I2, p1, p2, method = 'ave'):
     ho  = bog - tog + 1
 
     for c in xrange(mode):
+        jog = tog
+        jo1 = to1
+        jo2 = to2
         for h in xrange(ho):
             iog = log
             io1 = lo1
             io2 = lo2
             for w in xrange(wo):
-                res[c][tog, iog] = (1 - mask1[to1, io1]) * I2[c][to2, io2] + mask1[to1, io1] * I1[c][to1, io1]
+                res[c][jog, iog] = (1 - mask1[jo1, io1]) * I2[c][jo2, io2] + mask1[jo1, io1] * I1[c][jo1, io1]
+                #res[c][tog, iog] = mask1[to1, io1] #* I1[c][to1, io1]
+                #res[c][tog, iog] = (1 - mask1[to1, io1]) #* I2[c][to2, io2]
+                #res[c][jog, iog] = 1.0
+                
                 iog += 1
                 io1 += 1
                 io2 += 1
-            tog += 1
-            to1 += 1
-            to2 += 1
+
+            jog += 1
+            jo1 += 1
+            jo2 += 1
 
     return res
 

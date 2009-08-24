@@ -870,7 +870,7 @@ mosaicing <mat_1> <mat_2>
     p2[0][0] = p1[0][0] + yp
     p2[0][1] = p1[0][1] + xp
 
-    res = space_merge(mat1, mat2, p1, p2)
+    res = space_merge(mat1, mat2, p1, p2, 'ada')
     WORLD['res'] = ['mat', res]
 
     return 1
