@@ -539,22 +539,33 @@ def call_show_mat(args):
     '''
 Display a mat variable as an image
 show_mat <mat_name>
-Display a grid on the image
-show_mat <mat_name> g[size_inter_grid_in_pixel]
+show_mat <mat1_name> <mat2_name> ...
     '''
-    if len(args) == 0 or len(args) > 2 or args[0] == '-h':
+    #Display a grid on the image
+    #show_mat <mat_name> g[size_inter_grid_in_pixel]
+
+    if len(args) == 0 or args[0] == '-h':
         print call_show_mat.__doc__
         return 0
     lname = WORLD.keys()
-    name  = args[0]
-    if name not in lname:
-        outbox_exist(name)
-        return -1
-    if WORLD[name][0] != 'mat':
-        outbox_error('Only mat variable can be displayed')
-        return -1
-    mat = WORLD[name][1]
-    im  = image_mat2im(mat)
+    list_im = []
+    for name in args:
+        if name not in lname:
+            outbox_exist(name)
+            return -1
+        if WORLD[name][0] != 'mat':
+            outbox_error('Only mat variable can be displayed')
+            return -1
+    
+        mat = WORLD[name][1]
+        im  = image_mat2im(mat)
+        list_im.append(im)
+
+    image_show(list_im)
+    del list_im, args
+    '''
+    # 2009-08-24 08:44:10 JB
+    # disable the gris no body uses it
     if len(args) > 1:
         if args[1][0] != 'g':
             outbox_error('Argument %s incorrect' % args[1])
@@ -572,7 +583,7 @@ show_mat <mat_name> g[size_inter_grid_in_pixel]
     else:
         image_show(im)
         del im, mat
-
+    '''
     return 1
 
 def call_color2gray(args):

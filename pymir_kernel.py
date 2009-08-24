@@ -64,28 +64,79 @@ def image_write(im, name):
         sys.exit()
 
 # V0.1 2008-11-30 23:11:38 JB
-def image_show(image):
+def image_show(images):
     '''
-    Display PIL image data to window Tkinter form.
-    => [image] PIL image data
+    Display PIL imageq data to window Tkinter form.
+    => [imageq] list of PIL images data
     <= nothing
     '''
     from Tkinter import Tk, Canvas
     from PIL     import ImageTk, Image
+    from math    import sqrt, ceil
     import sys
 
-    try:
-        # window
-        win  = Tk()
+    #try:
+    # cst
+    wmax = 1024
+    hmax = 600
+    
+    # define the grid
+    v   = len(images)
+    nbl = sqrt(3 * v / 4.0)
+    nbc = ceil(nbl * 4 / 3.0)
+    if v % nbc == 0: nbl = v // nbc
+    else:            nbl = (v // nbc) + 1
+    nbc, nbl = int(nbc), int(nbl)
+    # prepare images
+    stepw  = wmax // nbc
+    steph  = hmax // nbl
+    thumbs = []
+    for image in images:
         w, h = image.size
-        surf = Canvas(win, width = w, height = h, bg = 'white')
-        surf.pack(side='left')
-        bmp  = ImageTk.PhotoImage(image)
-        item = surf.create_image(0, 0, image = bmp, anchor='nw')
-        win.mainloop()
-    except:
-        print 'Impossible to display image.'
-        sys.exit()
+        r    = w / float(h)
+        flag = False
+        if w > stepw:
+            w = stepw
+            h = int(w / r)
+            flag = True
+        if h > steph:
+            h = steph
+            w = int(h * r)
+            flag = True
+
+        if flag:
+            image = image.resize((w, h)) # default nearest
+            thumbs.append(image)
+        else:
+            thumbs.append(image)
+
+    # merge images
+    map  = Image.new('RGB', (wmax, hmax), (0, 0, 0))
+    
+    i, ic, il = 0, 0, 0    
+    while i < v:
+        im     = thumbs[i]
+        w, h   = im.size
+        iw, ih = ic*stepw, il*steph
+        map.paste(im, (iw, ih, iw+w, ih+h))
+        ic += 1
+        if ic >= nbc:
+            ic  = 0
+            il += 1
+
+        i += 1
+
+    # window
+    win  = Tk()
+    surf = Canvas(win, width = wmax, height = hmax, bg = 'white')
+    surf.pack(side='left')
+    bmp  = ImageTk.PhotoImage(map)
+    item = surf.create_image(0, 0, image = bmp, anchor='nw')
+
+    win.mainloop()
+    #except:
+    #    print 'Impossible to display image.'
+    #    sys.exit()
 
 # V0.1 2009-03-06 16:46:29 JB
 def image_show_grid(image, dgrid, color = 'red'):
