@@ -64,6 +64,7 @@ def image_write(im, name):
         sys.exit()
 
 # V0.1 2008-11-30 23:11:38 JB
+# V0.2 2009-08-25 09:25:17 JB
 def image_show(images):
     '''
     Display PIL imageq data to window Tkinter form.
@@ -166,8 +167,8 @@ def image_show(images):
     v   = len(images)
 
     # prepare images
-    if   v == 1: map, wmax, hmax = one_image(images,  hmax, wmax)
-    elif v == 2: map, wmax, hmax = two_images(images, hmax, wmax)
+    if   v == 1: map, wmax, hmax = one_image(images,  wmax, hmax)
+    elif v == 2: map, wmax, hmax = two_images(images, wmax, hmax)
 
     # window
     win  = Tk()
@@ -256,6 +257,127 @@ def image_show_get_pts(image, nbpts):
 
     return g_p
 
+# V0.1 2009-08-25 10:02:07 JB
+class win:
+    def __init__(self, wmax, hmax):
+        from Tkinter import Tk, Canvas
+        self.win  = Tk()
+        self.surf = Canvas(self.win, width = wmax, height = hmax, bg = 'white')
+        self.surf.pack(side = 'left')
+        self.bmp  = None
+        self.item = None
+        self.im   = None
+
+    def update(self):
+        from PIL import ImageTk, Image
+        if self.im is not None:
+            self.bmp  = ImageTk.PhotoImage(self.im)
+            self.item = self.surf.create_image(0, 0, image = self.bmp, anchor='nw')
+
+# V0.1 2009-08-25 09:26:16 JB
+global g_p, g_i, g_n
+def image_show_stereo_get_pts(im1, im2, nbpts):
+    '''
+    Display two PIL images data to window Tkinter form in order
+    to select some points with the mouse
+    => [im1]    Left PIL image data
+    => [im2]    Right PIL image data
+    => [nbpts]  Number of points required
+    <= [pts]    List of points [[y0, x0], [y1, x1], ..., [yi, xi]] 
+    '''
+    from Tkinter import Tk, Canvas
+    from PIL     import ImageTk, Image
+    from math    import sqrt, ceil
+    import sys
+
+    global g_p1, g_p2, g_i, g_n
+    g_p1 = []
+    g_p2 = []
+    g_i  = 0
+    g_n  = nbpts
+
+    def fit(image, wmax, hmax):
+        w, h = image.size
+        r    = w / float(h)
+        flag = False
+        if w > wmax:
+            w = wmax
+            h = int(w / r)
+            flag = True
+            print 'too large'
+        if h > hmax:
+            h = hmax
+            w = int(h * r)
+            flag = True
+            print 'too high'
+        
+        if flag:
+            image = image.resize((w, h)) # default nearest
+            
+        return image, w, h
+        
+    def two_images(images, wmax, hmax):
+        im1, w1, h1 = fit(images[0], wmax // 2, hmax)
+        im2, w2, h2 = fit(images[1], wmax // 2, hmax)
+        wmax        = w1 + w2
+        hmax        = max(h1, h2)
+        map         = Image.new('RGB', (wmax, hmax), (0, 0, 0))
+        dh1         = (hmax - h1) // 2
+        map.paste(im1, (0,  dh1, w1, h1 + dh1))
+        dh2         = (hmax - h2) // 2
+        map.paste(im2, (w1, dh1, w1 + w2, h2 + dh1))
+
+        return map, wmax, hmax, w1, w2, h1, h2, dh1, dh2
+ 
+    def callback(event):
+        global g_p1, g_p2, g_i, g_n
+        x, y = event.x, event.y
+
+        if g_i < g_n:
+            x -= 4 # bordure
+            y -= 4 # bordure
+            if x < 0:   x = 0
+            if y < 0:   y = 0
+            if x >= w1: x = w1 - 1
+            if y >= h1: y = h1 - 1
+            g_p1.append([y, x])
+            g_i += 1
+            mywin.im = image_plot_points(mywin.im, g_p1, 'target', 'red', 1)
+            mywin.update()
+        elif g_i < 2 * g_n:
+            x -= 4 # bordure
+            y -= 4 # bordure
+            if x < 0:   x = 0
+            if y < 0:   y = 0
+            if x >= w1: x = w1 - 1
+            if y >= h1: y = h1 - 1
+            g_p2.append([y, x])
+            g_i += 1
+            mywin.im = image_plot_points(mywin.im, g_p2, 'target', 'green', 1)
+            mywin.update()
+        else:        
+            mywin.win.destroy()
+
+    # cst
+    wmax = 1280
+    hmax = 600
+
+    # prepare images
+    map, wmax, hmax, w1, w2, h1, h2, dh1, dh2 = two_images([im1, im2], wmax, hmax)
+
+    # window
+    mywin     = win(wmax, hmax)
+    mywin.im  = map
+    mywin.update() 
+    mywin.surf.bind('<Button-1>', callback)
+    mywin.surf.pack()
+
+    mywin.win.mainloop()
+
+    print g_i, g_p
+
+    return g_p
+
 # V0.1 2008-12-23 10:59:13 JB
 # V0.2 2008-12-27 09:35:47 JB
 def image_plot_match_points(im1, im2, m1, m2, kind = 'pointlink', color = 'black'):
@@ -315,7 +437,8 @@ def image_plot_match_points(im1, im2, m1, m2, kind = 'pointlink', color = 'black
 
 # V0.1 2008-12-21 00:10:17 JB
 # V0.2 2009-03-27 15:51:50 JB
-def image_plot_points(im, pts, kind = 'point', color = 'red'):
+# v0.3 2009-08-25 10:53:03 JB
+def image_plot_points(im, pts, kind = 'point', color = 'red', num = 0):
     '''
     Plot list of points to PIL image.
     => [im]    PIL image data
@@ -325,6 +448,7 @@ def image_plot_points(im, pts, kind = 'point', color = 'red'):
                'pixel': only pixels set to point position
                (default 'point')
     => <color> color plot ('red', 'blue' or 'green') (default 'red')
+    => <num>   set to one to diplay the point number near to the point (default set to 0)
     <= im      PIL image data with points plotted
     '''
     import ImageDraw, sys
@@ -344,6 +468,7 @@ def image_plot_points(im, pts, kind = 'point', color = 'red'):
             y = pts[n][0] + 3
             draw.point((x, y), fill=col)
             draw.ellipse((x - rad, y - rad, x + rad, y + rad), outline=col)
+            if num: draw.text((x + rad, y + rad), str(n), fill=col)
     
     elif kind == 'point':
         rad = 2
@@ -351,11 +476,13 @@ def image_plot_points(im, pts, kind = 'point', color = 'red'):
             x = pts[n][1] + 3 # border
             y = pts[n][0] + 3
             draw.ellipse((x - rad, y - rad, x + rad, y + rad), fill=col)
+            if num: draw.text((x + rad, y + rad), str(n), fill=col)
     elif kind == 'pixel':
         for n in xrange(len(pts)):
             x = pts[n][1] + 3 # border
             y = pts[n][0] + 3
             draw.point((x, y), fill=col)
+            if num: draw.text((x, y), str(n), fill=col)
     else:
         print 'Image plot, kind of plot unknows.'
         sys.exit()

@@ -13,7 +13,7 @@
 from   pymir_kernel import image_read, image_write
 from   pymir_kernel import image_im2mat, image_mat2im
 from   pymir_kernel import image_show, image_show_grid, image_show_get_pts
-from   pymir_kernel import image_plot_points, image_plot_lines
+from   pymir_kernel import image_plot_points, image_plot_lines, image_show_stereo_get_pts
 from   pymir_kernel import color_color2gray, color_gray2color
 from   pymir_kernel import space_reg_ave, space_merge
 from   pymir_kernel import resto_wiener
@@ -849,6 +849,12 @@ mosaicing <mat_1> <mat_2>
     mat1 = WORLD[args[0]][1]
     mat2 = WORLD[args[1]][1]
     ws   = 35
+
+    im1  = image_mat2im(mat1)
+    im2  = image_mat2im(mat2)
+    p    = image_show_stereo_get_pts(im1, im2, 3)
+
+    return 1
 
     im  = image_mat2im(mat1)
     p1  = image_show_get_pts(im, 1)
