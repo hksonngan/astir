@@ -12,7 +12,7 @@
 
 from   pymir_kernel import image_read, image_write
 from   pymir_kernel import image_im2mat, image_mat2im
-from   pymir_kernel import image_show, image_show_grid, image_show_get_pts
+from   pymir_kernel import image_show, image_show_get_pts
 from   pymir_kernel import image_plot_points, image_plot_lines, image_show_stereo_get_pts
 from   pymir_kernel import color_color2gray, color_gray2color
 from   pymir_kernel import space_reg_ave, space_merge
@@ -565,7 +565,7 @@ show_mat <mat1_name> <mat2_name> ...
     del list_im, args
     '''
     # 2009-08-24 08:44:10 JB
-    # disable the gris no body uses it
+    # disable the grid no body uses it
     if len(args) > 1:
         if args[1][0] != 'g':
             outbox_error('Argument %s incorrect' % args[1])

@@ -399,7 +399,7 @@ def image_plot_match_points(im1, im2, m1, m2, kind = 'pointlink', color = 'black
 # V0.1 2008-12-21 00:10:17 JB
 # V0.2 2009-03-27 15:51:50 JB
 # v0.3 2009-08-25 10:53:03 JB
-def image_plot_points(im, pts, kind = 'point', color = 'red', num = 0):
+def image_plot_points(im, pts, kind = 'point', color = 'red', num = 0, rad = 3):
     '''
     Plot list of points to PIL image.
     => [im]    PIL image data
@@ -423,26 +423,35 @@ def image_plot_points(im, pts, kind = 'point', color = 'red', num = 0):
 
     draw = ImageDraw.Draw(im)
     if kind == 'target':
-        rad = 3
         for n in xrange(len(pts)):
-            x = pts[n][1] + 3 # border
-            y = pts[n][0] + 3
+            x    = pts[n][1] - 1
+            y    = pts[n][0] - 1
+            x, y = int(x), int(y)
             draw.point((x, y), fill=col)
             draw.ellipse((x - rad, y - rad, x + rad, y + rad), outline=col)
             if num: draw.text((x + rad, y + rad), str(n), fill=col)
-    
     elif kind == 'point':
-        rad = 2
         for n in xrange(len(pts)):
-            x = pts[n][1] + 3 # border
-            y = pts[n][0] + 3
+            x    = pts[n][1] - 1
+            y    = pts[n][0] - 1
+            x, y = int(x), int(y)
             draw.ellipse((x - rad, y - rad, x + rad, y + rad), fill=col)
             if num: draw.text((x + rad, y + rad), str(n), fill=col)
     elif kind == 'pixel':
         for n in xrange(len(pts)):
-            x = pts[n][1] + 3 # border
-            y = pts[n][0] + 3
+            x    = pts[n][1] - 1
+            y    = pts[n][0] - 1
+            x, y = int(x), int(y)
             draw.point((x, y), fill=col)
+            if num: draw.text((x, y), str(n), fill=col)
+    elif kind == 'win':
+        for n in xrange(len(pts)):
+            rad  = (rad - 1) // 2
+            x    = pts[n][1] - 1
+            y    = pts[n][0] - 1
+            x, y = int(x), int(y)
+            draw.point((x, y), fill=col)
+            draw.rectangle((x - rad, y - rad, x + rad, y + rad), outline=col)
             if num: draw.text((x, y), str(n), fill=col)
     else:
         print 'Image plot, kind of plot unknows.'
