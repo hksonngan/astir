@@ -63,7 +63,7 @@ def image_write(im, name):
         print 'Impossible to write the file %s.' % name
         sys.exit()
 
-
+"""
 # V0.1 2009-03-06 16:46:29 JB
 def image_show_grid(image, dgrid, color = 'red'):
     '''
@@ -90,54 +90,7 @@ def image_show_grid(image, dgrid, color = 'red'):
     l2 = array(l2)
     image = image_plot_lines(image, l1, l2, color)
     image_show(image)
-
-# V0.1 2009-03-06 16:26:57 JB
-# V0.2 2009-03-27 13:48:27 JB
-global g_p, g_i
-def image_show_get_pts(image, nbpts):
-    '''
-    Display PIL image data to window Tkinter form in order
-    to select some points with the mouse.
-    => [image] PIL image data
-    => [nbpts] Number of points required
-    <= [pts]   List of points [[y0, x0], [y1, x1], ..., [yi, xi]]
-    '''
-    from Tkinter import Tk, Canvas
-    from PIL     import ImageTk, Image
-    import sys
-
-    global g_p, g_i
-    g_p = [[0, 0] for i in xrange(nbpts)]
-    g_i = 0
-
-    def callback(event):
-        global g_p, g_i
-        x, y = event.x, event.y
-        x -= 4 # bordure
-        y -= 4 # bordure
-        if x < 0:  x = 0
-        if y < 0:  y = 0
-        if x >= w: x = w - 1
-        if y >= h: y = h - 1
-        g_p[g_i][1], g_p[g_i][0] = x, y
-        g_i += 1
-        if g_i >= nbpts: win.destroy()
-
-    try:
-        # window
-        win  = Tk()
-        w, h = image.size
-        surf = Canvas(win, width = w, height = h, bg = 'white')
-        bmp  = ImageTk.PhotoImage(image)
-        item = surf.create_image(0, 0, image = bmp, anchor='nw')
-        surf.bind('<Button-1>', callback)
-        surf.pack()
-        win.mainloop()
-    except:
-        print 'Impossible to display image.'
-        sys.exit()
-
-    return g_p
+"""
 
 # V0.1 2009-08-25 10:02:07 JB
 class win:
@@ -227,6 +180,65 @@ def image_show(images):
     mywin.update() 
     mywin.win.mainloop()
 
+global g_p, g_i
+# V0.1 2009-03-06 16:26:57 JB
+# V0.2 2009-03-27 13:48:27 JB
+# V0.3 2009-08-26 15:22:12 JB
+def image_show_get_pts(image, nbpts):
+    '''
+    Display PIL image data to window Tkinter form in order
+    to select some points with the mouse.
+    => [image] PIL image data
+    => [nbpts] Number of points required
+    <= [pts]   List of points [[y0, x0], [y1, x1], ..., [yi, xi]]
+    '''
+    from Tkinter import Tk, Canvas
+    from PIL     import ImageTk, Image
+    import sys
+
+    global g_p, g_i, g_n
+    g_p = []
+    g_i = 0
+    g_n = nbpts
+
+    wmax  = 1280
+    hmax  = 600
+    mywin = win()
+
+    def callback(event):
+        global g_p, g_i, g_n
+        x, y = event.x, event.y
+        if g_i < g_n:
+            x -= 4 # bordure
+            y -= 5 # bordure
+            if x < 0:     x = 0
+            if y < 0:     y = 0
+            if x >= wmax: x = wmax - 1
+            if y >= hmax: y = hmax - 1
+            g_p.append([y, x])
+            g_i += 1
+        else:
+            mywin.win.destroy()
+
+    map, wmax, hmax = mywin.fit(image, wmax, hmax)
+
+    # window
+    mywin.surf(wmax, hmax)
+    mywin.im  = map
+    mywin.update() 
+    mywin.surf.bind('<Button-1>', callback)
+    mywin.surf.pack()
+
+    mywin.win.mainloop()
+
+    p1 = []
+    for p in g_p:
+        p[0] += 4 # bordure
+        p[1] += 4 # bordure
+        p1.append(p)
+
+    return p1
+
 global g_p, g_i, g_n
 # V0.1 2009-08-25 09:26:16 JB
 def image_show_stereo_get_pts(im1, im2, nbpts):
@@ -294,10 +306,6 @@ def image_show_stereo_get_pts(im1, im2, nbpts):
             mywin.update()
         else:        
             mywin.win.destroy()
-
-    # cst
-    wmax = 1280
-    hmax = 600
 
     # prepare images
     map, wmax, hmax, w1, w2, h1, h2, dh1, dh2 = two_images([im1, im2], wmax, hmax)
