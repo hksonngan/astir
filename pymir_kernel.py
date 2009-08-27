@@ -184,7 +184,7 @@ global g_p, g_i
 # V0.1 2009-03-06 16:26:57 JB
 # V0.2 2009-03-27 13:48:27 JB
 # V0.3 2009-08-26 15:22:12 JB
-def image_show_get_pts(image, nbpts):
+def image_show_get_pts(image, nbpts, rad = 35):
     '''
     Display PIL image data to window Tkinter form in order
     to select some points with the mouse.
@@ -209,14 +209,15 @@ def image_show_get_pts(image, nbpts):
         global g_p, g_i, g_n
         x, y = event.x, event.y
         if g_i < g_n:
-            x -= 4 # bordure
-            y -= 5 # bordure
+            y -= 1 # bordure
             if x < 0:     x = 0
             if y < 0:     y = 0
             if x >= wmax: x = wmax - 1
             if y >= hmax: y = hmax - 1
             g_p.append([y, x])
             g_i += 1
+            mywin.im = image_plot_points(mywin.im, g_p, 'win', 'red', rad = rad)
+            mywin.update()
         else:
             mywin.win.destroy()
 
@@ -231,13 +232,7 @@ def image_show_get_pts(image, nbpts):
 
     mywin.win.mainloop()
 
-    p1 = []
-    for p in g_p:
-        p[0] += 4 # bordure
-        p[1] += 4 # bordure
-        p1.append(p)
-
-    return p1
+    return g_p
 
 global g_p, g_i, g_n
 # V0.1 2009-08-25 09:26:16 JB
@@ -283,8 +278,7 @@ def image_show_stereo_get_pts(im1, im2, nbpts):
         x, y = event.x, event.y
 
         if g_i < g_n:
-            x -= 4 # bordure
-            y -= 5 # bordure
+            y -= 1 # bordure
             if x < 0:         return
             if y < dh1:       return
             if x >= w1:       return
@@ -294,8 +288,7 @@ def image_show_stereo_get_pts(im1, im2, nbpts):
             mywin.im = image_plot_points(mywin.im, g_p1, 'target', 'red', 1)
             mywin.update()
         elif g_i < 2 * g_n:
-            x -= 4 # bordure
-            y -= 5 # bordure
+            y -= 1 # bordure
             if x < w1:        return
             if y < dh2:       return
             if x >= w1 + w2:  return
@@ -321,23 +314,15 @@ def image_show_stereo_get_pts(im1, im2, nbpts):
 
     p1 = []
     for p in g_p1:
-        p[0] += 4 # bordure
-        p[1] += 4 # bordure
         p[0] -= dh1
         p1.append(p)
     p2 = []
     for p in g_p2:
-        p[0] += 4 # bordure
-        p[1] += 4 # bordure
         p[0] -= dh2
         p[1] -= w1
         p2.append(p)
 
-    print g_i
-    print g_p1
-    print g_p2
-
-    return g_p1
+    return g_p1, g_p2
 
 # V0.1 2008-12-23 10:59:13 JB
 # V0.2 2008-12-27 09:35:47 JB
@@ -446,7 +431,6 @@ def image_plot_points(im, pts, kind = 'point', color = 'red', num = 0, rad = 3):
             if num: draw.text((x, y), str(n), fill=col)
     elif kind == 'win':
         for n in xrange(len(pts)):
-            rad  = (rad - 1) // 2
             x    = pts[n][1] - 1
             y    = pts[n][0] - 1
             x, y = int(x), int(y)

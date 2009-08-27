@@ -15,7 +15,7 @@ from   pymir_kernel import image_im2mat, image_mat2im
 from   pymir_kernel import image_show, image_show_get_pts
 from   pymir_kernel import image_plot_points, image_plot_lines, image_show_stereo_get_pts
 from   pymir_kernel import color_color2gray, color_gray2color
-from   pymir_kernel import space_reg_ave, space_merge
+from   pymir_kernel import space_reg_ave, space_merge, space_align
 from   pymir_kernel import resto_wiener
 from   math import log
 import os, sys, optparse
@@ -750,17 +750,10 @@ seq_reg_ave im 10 10 35
         outbox_bang('Window size must be odd, set to %i' % ws)
     mat = WORLD[src][1][0]
     im  = image_mat2im(mat)
-    p   = image_show_get_pts(im, 1)
-    print 'point selected:', p[0]
-    dw  = (ws - 1) // 2
-    x   = p[0][1]
-    y   = p[0][0]
-    l1  = [[y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw], [y+dw, x-dw]]
-    l2  = [[y+dw, x-dw], [y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw]]
     im  = color_gray2color(im)
-    im  = image_plot_lines(im, l1, l2, 'red')
-    im  = image_plot_points(im, p, 'pixel')
-    image_show(im)
+    dw  = (ws - 1) // 2
+    p   = image_show_get_pts(im, 1, rad = dw)
+    print 'point selected:', p[0]
     ave = space_reg_ave(WORLD[src][1], p, ws, dx, dy)
     WORLD['ave_' + src] = ['mat', ave]
     return 1
@@ -846,41 +839,15 @@ def call_mosaicing(args):
 Create mosaicing from two images
 mosaicing <mat_1> <mat_2>
     '''
-    mat1 = WORLD[args[0]][1]
-    mat2 = WORLD[args[1]][1]
-    ws   = 35
+    mat1   = WORLD[args[0]][1]
+    mat2   = WORLD[args[1]][1]
+    ws     = 35
 
-    im1  = image_mat2im(mat1)
-    im2  = image_mat2im(mat2)
-    p    = image_show_stereo_get_pts(im1, im2, 3)
-
-    return 1
-
-    im  = image_mat2im(mat1)
-    p1  = image_show_get_pts(im, 1)
-    print 'point selected:', p1[0]
-    dw  = (ws - 1) // 2
-    x   = p1[0][1]
-    y   = p1[0][0]
-    l1  = [[y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw], [y+dw, x-dw]]
-    l2  = [[y+dw, x-dw], [y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw]]
-    im  = color_gray2color(im)
-    im  = image_plot_lines(im, l1, l2, 'red')
-    im  = image_plot_points(im, p1, 'pixel')
-    image_show(im)
-
-    im  = image_mat2im(mat2)
-    p2  = image_show_get_pts(im, 1)
-    print 'point selected:', p2[0]
-    dw  = (ws - 1) // 2
-    x   = p2[0][1]
-    y   = p2[0][0]
-    l1  = [[y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw], [y+dw, x-dw]]
-    l2  = [[y+dw, x-dw], [y-dw, x-dw], [y-dw, x+dw], [y+dw, x+dw]]
-    im  = color_gray2color(im)
-    im  = image_plot_lines(im, l1, l2, 'red')
-    im  = image_plot_points(im, p2, 'pixel')
-    image_show(im)
+    im1    = image_mat2im(mat1)
+    im2    = image_mat2im(mat2)
+    im1    = color_gray2color(im1)
+    im2    = color_gray2color(im2)
+    p1, p2 = image_show_stereo_get_pts(im1, im2, 4)
 
     from pymir_kernel import space_align 
     xp, yp = space_align(mat1[0], mat2[0], p1, 35, 5, 5, p2)
