@@ -877,7 +877,7 @@ def space_reg_ave(lmat, p, ws, tx, ty, N = -1):
     '''
     Images average after registration by grid alignment
     => [lmat] list of images (numarray [L] or [R, G, B])
-    => [p]    feature point tracked [[y, x]]
+    => [p]    feature point tracked [y, x]
     => [ws]   window size tracked (must be odd)
     => [tx]   delta x to align (from p-tx to p+tx)
     => [ty]   delta y to align (from p-ty to p+ty)
@@ -907,10 +907,10 @@ def space_reg_ave(lmat, p, ws, tx, ty, N = -1):
 
         xp, yp   = space_align(mat1, mat2, p, ws, tx, ty)
 
-        p[0][0] += yp
-        p[0][1] += xp
-        xt      += xp
-        yt      += yp
+        p[0] += yp
+        p[1] += xp
+        xt   += xp
+        yt   += yp
         print 'im:', n, n + 1, 'dx:', xp, 'dy:', yp
 
         for j in xrange(h):
@@ -972,7 +972,7 @@ def space_align(I1, I2, p1, sw, tx, ty, p2 = -1):
     Gridding aligment method between two images
     => [I1]   image 1 (numarray only luminance)
     => [I2]   image 2 (numarray only luminance)
-    => [p1]   feature point tracked [[y, x]]
+    => [p1]   feature point tracked [y, x]
     => [sw]   window size tracked (must be odd)
     => [tx]   delta x to align (from p-tx to p+tx)
     => [ty]   delta y to align (from p-ty to p+ty)
@@ -984,8 +984,8 @@ def space_align(I1, I2, p1, sw, tx, ty, p2 = -1):
 
     # I1 and I2 are mat
     rad  = sw // 2
-    x1   = p1[0][1]
-    y1   = p1[0][0]
+    x1   = p1[1]
+    y1   = p1[0]
     w    = len(I1[0])
     h    = len(I1)
     i1   = I1[y1 - rad:y1 + rad + 1, x1 - rad:x1 + rad + 1]
@@ -997,8 +997,8 @@ def space_align(I1, I2, p1, sw, tx, ty, p2 = -1):
         x2 = x1
         y2 = y1
     else:
-        x2 = p2[0][1]
-        y2 = p2[0][0]
+        x2 = p2[1]
+        y2 = p2[0]
     for y in xrange(y2 - ty, y2 + ty + 1):
         for x in xrange(x2 - tx, x2 + tx + 1):
             i2 = I2[y - rad:y + rad + 1, x - rad:x + rad + 1]
@@ -1019,7 +1019,7 @@ def space_merge(I1, I2, p1, p2, method = 'ave'):
     => [I1]     image 1 (numarray [L] or [R, G, B])
     => [I2]     image 2 (numarray [L] or [R, G, B])
     => [p1]     interest point to image 1 [[y1, x1]]
-    => [p2]     same interst point p1 to image 2 [[y2, x2]]
+    => [p2]     same interest point p1 to image 2 [[y2, x2]]
     => [method] merging mode 'ave' average or 'ada' adaptative
     <= I3       result image L or RGB
     '''
@@ -1287,6 +1287,49 @@ def space_match_points(im1, im2, p1, p2, sw, kind='full'):
         pts2.pop(best)
     
     return m1, m2
+
+## GEOMETRY ######################
+
+# V0.1 2009-08-27 07:45:51 JB
+def geo_homography(p1, p2):
+    '''
+    Compute the homography matrix (need at least 4 points per pair)
+    use DLT method (Direct Linear Transformation)
+    => [p1] list of points p1 [[y0, x0], ..., [yi, xi]]
+    => [p2] list of points matched with p1 [[y0, x0], ..., [yi, xi]]
+    <= [H]  Homogenous homography array [3x3] 
+    '''
+    print p1
+    print p2
+    from numpy import zeros, linalg, reshape
+    A = zeros((2 * len(p1), 9))
+    for n in xrange(len(p1)):
+        y1, x1       = p1[n]
+        y2, x2       = p2[n]
+        A[2 * n]     = [ 0,  0, 0, -x1, -y1, 1,  y2*x1,  y2*y1,  y2] 
+        A[2 * n + 1] = [x1, y1, 1,   0,   0, 0, -x2*x1, -x2*y1, -x2]
+
+    U, S, V  = linalg.svd(A)
+    H        = V[:, 8].reshape((3, 3))
+    H       /= H[2, 2]
+
+    #print V
+
+    print ''
+    
+    print H
+    
+    from numpy import matrix
+    H = matrix(H)
+    for n in xrange(len(p1)):
+        y2, x2 = p2[n]
+        y1, x1 = p1[n]
+        p = matrix([[x1], [y1], [1]])
+        p2b = H * p
+        p2b /= p2b[2]
+        #print 'p2', x2, y2, 'Gp1', p2b
+
+    return H
 
 ## STATISTICS ####################
 

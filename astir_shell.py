@@ -17,6 +17,7 @@ from   pymir_kernel import image_plot_points, image_plot_lines, image_show_stere
 from   pymir_kernel import color_color2gray, color_gray2color
 from   pymir_kernel import space_reg_ave, space_merge, space_align
 from   pymir_kernel import resto_wiener
+from   pymir_kernel import geo_homography
 from   math import log
 import os, sys, optparse
 import readline # allow to back line in the shell
@@ -754,7 +755,7 @@ seq_reg_ave im 10 10 35
     dw  = (ws - 1) // 2
     p   = image_show_get_pts(im, 1, rad = dw)
     print 'point selected:', p[0]
-    ave = space_reg_ave(WORLD[src][1], p, ws, dx, dy)
+    ave = space_reg_ave(WORLD[src][1], p[0], ws, dx, dy)
     WORLD['ave_' + src] = ['mat', ave]
     return 1
 
@@ -849,13 +850,16 @@ mosaicing <mat_1> <mat_2>
     im2    = color_gray2color(im2)
     p1, p2 = image_show_stereo_get_pts(im1, im2, 4)
 
-    from pymir_kernel import space_align 
-    xp, yp = space_align(mat1[0], mat2[0], p1, 35, 5, 5, p2)
-    p2[0][0] = p1[0][0] + yp
-    p2[0][1] = p1[0][1] + xp
+    for n in xrange(len(p1)):
+        print 'Aligned match points %i' % n
+        xp, yp = space_align(mat1[0], mat2[0], p1[n], 35, 5, 5, p2[n])
+        p2[0][0] = p1[0][0] + yp
+        p2[0][1] = p1[0][1] + xp
 
-    res = space_merge(mat1, mat2, p1, p2, 'ada')
-    WORLD['res'] = ['mat', res]
+    H = geo_homography(p1, p2)
+    print H
+    #res = space_merge(mat1, mat2, p1, p2, 'ada')
+    #WORLD['res'] = ['mat', res]
 
     return 1
 
