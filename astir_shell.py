@@ -15,7 +15,7 @@ from   pymir_kernel import image_im2mat, image_mat2im
 from   pymir_kernel import image_show, image_show_get_pts
 from   pymir_kernel import image_plot_points, image_plot_lines, image_show_stereo_get_pts
 from   pymir_kernel import color_color2gray, color_gray2color
-from   pymir_kernel import space_reg_ave, space_merge, space_align
+from   pymir_kernel import space_reg_ave, space_merge, space_align, space_G_transform
 from   pymir_kernel import resto_wiener
 from   pymir_kernel import geo_homography
 from   math import log
@@ -857,9 +857,10 @@ mosaicing <mat_1> <mat_2>
         p2[0][1] = p1[0][1] + xp
 
     H = geo_homography(p1, p2)
+    res = space_G_transform(H, im1)
     print H
     #res = space_merge(mat1, mat2, p1, p2, 'ada')
-    #WORLD['res'] = ['mat', res]
+    WORLD['res'] = ['mat', res]
 
     return 1
 

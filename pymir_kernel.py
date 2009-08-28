@@ -1288,6 +1288,74 @@ def space_match_points(im1, im2, p1, p2, sw, kind='full'):
     
     return m1, m2
 
+# V0.1 2009-08-28 03:42:33 JB
+def space_G_transform(G, im, method = 0):
+    '''
+    Apply homography transformation to an PIL image
+    => G        homography matrix (numpy array 3x3)
+    => im       PIL image (L or RGB)
+    => <method> method use to warp image 'NEAREST', 'BILINEAR' or 'BICUBIC'
+    <= res      PIL image transformed
+    '''
+    from numpy import matrix, zeros
+    G  = matrix(G)
+    GI = G.I
+
+    w, h = im.size
+    c0   = G * matrix([0, 0, 1]).T
+    c1   = G * matrix([w, 0, 1]).T
+    c2   = G * matrix([w, h, 1]).T
+    c3   = G * matrix([0, h, 1]).T
+
+    l = min(c0[0], c1[0], c2[0], c3[0])
+    r = max(c0[0], c1[0], c2[0], c3[0])
+    t = min(c0[1], c1[1], c2[1], c3[1])
+    b = max(c0[1], c1[1], c2[1], c3[1]) 
+    l = int(l)
+    r = int(r)
+    t = int(t)
+    b = int(b)
+
+    wim  = r - l + 1
+    him  = b - t + 1
+    mat2 = zeros((him, wim))
+    mat1 = image_im2mat(im)
+ 
+    print w, h
+    print wim, him
+    raw_input()
+   
+    pixy = 0
+    for y in xrange(t, b + 1):
+        pixx = 0
+        for x in xrange(l, r + 1):
+            p1t  = GI * matrix([x, y, 1]).T
+            p1t /= p1t[2]
+            #p1t  = p1t.round()
+            p1t  = p1t.astype('int32')
+            p1t  = p1t.T
+            #print p1t.tolist()
+            x1, y1, z1 = p1t.tolist()[0]
+            if x1 < 0 or x1 >= w or y1 < 0 or y1 >= h: continue
+            #print y1, x1
+            pix = mat1[0][y1, x1]
+            mat2[pixy, pixx] = pix
+
+            pixx += 1
+
+        pixy += 1
+        print (pixy / float(him)) * 100
+
+ 
+    print l, t, r, b
+    print wim, him
+
+    return [mat2]
+
+    #print c0, c1, c2, c3
+    
+
+
 ## GEOMETRY ######################
 
 # V0.1 2009-08-27 07:45:51 JB
