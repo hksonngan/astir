@@ -1306,30 +1306,14 @@ def geo_homography(p1, p2):
     for n in xrange(len(p1)):
         y1, x1       = p1[n]
         y2, x2       = p2[n]
-        A[2 * n]     = [ 0,  0, 0, -x1, -y1, 1,  y2*x1,  y2*y1,  y2] 
-        A[2 * n + 1] = [x1, y1, 1,   0,   0, 0, -x2*x1, -x2*y1, -x2]
+        A[2 * n]     = [ 0,  0, 0, -x1, -y1, -1,  y2*x1,  y2*y1,  y2] 
+        A[2 * n + 1] = [x1, y1, 1,   0,   0,  0, -x2*x1, -x2*y1, -x2]
 
     U, S, V  = linalg.svd(A)
-    H        = V[:, 8].reshape((3, 3))
-    H       /= H[2, 2]
+    G        = V[8].reshape((3, 3))
+    G       /= G[2, 2]
 
-    #print V
-
-    print ''
-    
-    print H
-    
-    from numpy import matrix
-    H = matrix(H)
-    for n in xrange(len(p1)):
-        y2, x2 = p2[n]
-        y1, x1 = p1[n]
-        p = matrix([[x1], [y1], [1]])
-        p2b = H * p
-        p2b /= p2b[2]
-        #print 'p2', x2, y2, 'Gp1', p2b
-
-    return H
+    return G
 
 ## STATISTICS ####################
 
