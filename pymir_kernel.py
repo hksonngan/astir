@@ -568,7 +568,7 @@ def image_mat2im(mat):
             im  = Image.merge('RGB', (imb, img, imb))
             return im
         elif mode == 4:
-            a   = a * 255
+            a   = mat[3] * 255
             a   = list(reshape(mat[3], (nbp)))
             ima = Image.new('L', (w, h), 255)
             ima.putdata(a)
@@ -1369,7 +1369,8 @@ def geo_homography(p1, p2):
     '''
     print p1
     print p2
-    from numpy import zeros, linalg, reshape
+    from numpy import zeros, linalg, reshape, matrix
+
     A = zeros((2 * len(p1), 9))
     for n in xrange(len(p1)):
         y1, x1       = p1[n]
@@ -1381,7 +1382,7 @@ def geo_homography(p1, p2):
     G        = V[8].reshape((3, 3))
     G       /= G[2, 2]
 
-    return G
+    return matrix(G)
 
 ## STATISTICS ####################
 
