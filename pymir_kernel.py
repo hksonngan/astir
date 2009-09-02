@@ -1311,10 +1311,10 @@ def space_G_transform(G, im, method = 0):
     <= res      PIL image transformed
     '''
     from numpy import matrix, zeros
-    G  = matrix(G)
-    GI = G.I
+    from sys   import stdout
 
-    w, h = im.size
+    GI   = G.I
+    w, h = im[0].size
     c0   = G * matrix([0, 0, 1]).T
     c1   = G * matrix([w, 0, 1]).T
     c2   = G * matrix([w, h, 1]).T
@@ -1331,43 +1331,48 @@ def space_G_transform(G, im, method = 0):
 
     wim  = r - l + 1
     him  = b - t + 1
-    mat2 = zeros((him, wim))
     mat1 = image_im2mat(im)
- 
-    print w, h
-    print wim, him
-    raw_input()
-   
+    Ch   = len(mat1)
+    mat2 = []
+    for c in xrange(Ch): mat2.append(zeros((him, wim)))
+    
     pixy = 0
     for y in xrange(t, b + 1):
         pixx = 0
         for x in xrange(l, r + 1):
-            p1t  = GI * matrix([x, y, 1]).T
-            p1t /= p1t[2]
-            #p1t  = p1t.round()
-            p1t  = p1t.astype('int32')
-            p1t  = p1t.T
-            #print p1t.tolist()
+            p1t        = GI * matrix([x, y, 1]).T
+            p1t       /= p1t[2]
+            p1t        = p1t.astype('int32')
+            p1t        = p1t.T
             x1, y1, z1 = p1t.tolist()[0]
-            if x1 < 0 or x1 >= w or y1 < 0 or y1 >= h: continue
-            #print y1, x1
-            pix = mat1[0][y1, x1]
-            mat2[pixy, pixx] = pix
+            x1i, y1i   = int(x1), int(y1)
+            if x1i < 0 or x1i >= w or y1i < 0 or y1i >= h: continue
+
+            if   method == 'NEAREST':
+                for c in xrange(Ch):
+                    mat2[c][pixy, pixx] = mat1[c][y1i, x1i]
+            elif method == 'BILINEAR':
+                a0  = x1 - x1i
+                a1  = 1 - a0
+                a2  = y1 - y1i
+                a3  = 1 - a2
+                A   = array([[0, a2, 0], [a1, 1.0, a0], [0, a3, 0]])
+                # here need to check not over < 0 or > w, h
+                for c in xrange(Ch):
+                    pix = mat1[c][y1i-1:y1i+2, x1i-1:x1i+2]
+                    pix = pix * A
+                    pix = pix.sum() / 5.0
+                    mat2[c][pixy, pixx] = pix
+                
 
             pixx += 1
 
         pixy += 1
-        print (pixy / float(him)) * 100
-
+        stdout.write('\rprocess %6.2f' % (pixy / float(him)) * 100)
  
-    print l, t, r, b
-    print wim, him
+    print ''
 
-    return [mat2]
-
-    #print c0, c1, c2, c3
-    
-
+    return mat2
 
 ## GEOMETRY ######################
 
@@ -1380,8 +1385,6 @@ def geo_homography(p1, p2):
     => [p2] list of points matched with p1 [[y0, x0], ..., [yi, xi]]
     <= [H]  Homogenous homography array [3x3] 
     '''
-    print p1
-    print p2
     from numpy import zeros, linalg, reshape, matrix
 
     p1, T1 = stats_norm2D_pts(p1)
