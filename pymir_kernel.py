@@ -1,10 +1,23 @@
+#!/usr/bin/env python
 #
-#  pymir_kernel.py
-#  PyMIR
+# This file is part of Astir
+# 
+# Astir is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
+# Astir is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Astir.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Astir Copyright (C) 2008 Julien Bert 
+
 #  Created by Julien Bert on 05/11/08.
-#  Copyright (c) 2008 Julien Bert. All rights reserved.
-#
 
 ## IMAGE ####################
 # V0.1 2008-11-30 23:00:30 JB 
@@ -1371,6 +1384,8 @@ def geo_homography(p1, p2):
     print p2
     from numpy import zeros, linalg, reshape, matrix
 
+    p1, T1 = stats_norm2D_pts(p1)
+    p2, T2 = stats_norm2D_pts(p2)
     A = zeros((2 * len(p1), 9))
     for n in xrange(len(p1)):
         y1, x1       = p1[n]
@@ -1381,10 +1396,45 @@ def geo_homography(p1, p2):
     U, S, V  = linalg.svd(A)
     G        = V[8].reshape((3, 3))
     G       /= G[2, 2]
+    G        = T2.I * G * T1
 
     return matrix(G)
 
 ## STATISTICS ####################
+
+# V0.1 2009-09-01 17:58:15 JB
+def stats_norm2D_pts(p):
+    '''
+    Normalize point in order the average distance between points and
+    centroid is equal to sqrt(2). This is used to compute the 
+    homography according Hartley and Zisserman normalization.
+    => [p]  list of points [[y0, x0], ..., [yi, xi]]
+    <= newp list of points normalize, same format as p
+    <= T    transformation matrix used to normalize, numpy matrix format 3x3
+    '''
+    from numpy import zeros, matrix, sqrt, mean
+
+    n = len(p)
+    y = zeros((n))
+    x = zeros((n))
+    for i in xrange(n):
+        y[i] = p[i][0]
+        x[i] = p[i][1]
+    cx, cy = mean(x), mean(y)
+    newx   = x - cx
+    newy   = y - cy
+    dist   = 0
+    for i in xrange(n): dist += sqrt(newy[i]*newy[i] + newx[i]*newx[i])
+    dist  /= float(n)
+    scale  = sqrt(2) / dist
+    T      = matrix([[scale, 0, -scale * cx], [0, scale, -scale * cy], [0, 0, 1]])
+    newp   = []
+    for i in xrange(n):
+        p = T * matrix([x[i], y[i], 1]).T
+        p = p.T.tolist()[0]
+        newp.append([p[1], p[0]])
+
+    return newp, T
 
 # V0.1 2008-12-27 11:00:59 JB
 def stats_dist_pts(pts1, pts2):

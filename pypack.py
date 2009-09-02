@@ -1,5 +1,22 @@
 #!/usr/bin/env python
-# pyoack
+#
+# This file is part of Astir
+# 
+# Astir is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Astir is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Astir.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Astir Copyright (C) 2008 Julien Bert 
+
 # V0.2 2008-12-22 15:09:34 JB
 lines = open('pymir_kernel.py', 'r').readlines()
 #lines = open('astir_shell.py', 'r').readlines()

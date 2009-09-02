@@ -1,4 +1,21 @@
 #!/usr/bin/env python
+#
+# This file is part of Astir
+# 
+# Astir is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Astir is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Astir.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Astir Copyright (C) 2008 Julien Bert 
 
 ## Convention
 # import
@@ -29,7 +46,7 @@ listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var',
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
            'seq2mat', 'seq_reg_ave', 'load_vid', 'wiener', 'mosaicing',
-           'cut_seq']
+           'cut_seq', 'licence']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -928,6 +945,11 @@ cut_seq vid1 :24 vid2   # keep 10 to last image
 
     return 1
 
+def call_licence(args):
+    data = open('COPYING', 'r').readlines()
+    for line in data: print line.strip('\n')
+
+    return 1
 
 '''
 #=== documentation ==============
@@ -979,7 +1001,13 @@ else:
     print '|  _  / __| __| | \'__)'
     print '| | | \__ \ |_| | |'
     print '\_| |_/___/\__|_|_|'
-
+    print ''
+    print 'Astir  Copyright (C) 2008  Julien Bert'
+    print 'This program comes with ABSOLUTELY NO WARRANTY; for details type "licence".'
+    print 'This is free software, and you are welcome to redistribute it'
+    print 'under certain conditions; type "licence" for details.'
+    print 'GNU General Public License version 3'
+    print ''
     print '** Astir Shell V0.36 **\n'
 
 
@@ -1089,4 +1117,7 @@ while 1 and not script_end:
         continue
     if progname == 'cut_seq':
         call_cut_seq(args)
+        continue
+    if progname == 'licence':
+        call_licence(args)
         continue
