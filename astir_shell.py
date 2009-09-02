@@ -953,26 +953,47 @@ def call_licence(args):
 
 '''
 #=== documentation ==============
+print '# ls'
 print call_ls.__doc__
+print '# ldir'
 print call_ldir.__doc__
+print '# rm'
 print call_rm.__doc__
+print '# mv'
 print call_mv.__doc__
+print '# cp'
 print call_cp.__doc__
+print '# mem'
 print call_mem.__doc__
+print '# fun'
 print call_fun.__doc__
+print '# save_var'
 print call_save_var.__doc__
+print '# save_world'
 print call_save_world.__doc__
+print '# load_var'
 print call_load_var.__doc__
+print '# load_world'
 print call_load_world.__doc__
+print '# load_im'
 print call_load_im.__doc__
+print '# save_im'
 print call_save_im.__doc__
+print '# show_mat'
 print call_show_mat.__doc__
+print '# color2gray'
 print call_color2gray.__doc__
+print '# seq2mat'
 print call_seq2mat.__doc__
+print '# seq_reg_ave'
 print call_seq_reg_ave.__doc__
+print '# load_vid'
 print call_load_vid.__doc__
+print '# wiener'
 print call_wiener.__doc__
+print '# mosaicing'
 print call_mosaicing.__doc__
+print '# cut_seq'
 print call_cut_seq.__doc__
 sys.exit()
 '''
