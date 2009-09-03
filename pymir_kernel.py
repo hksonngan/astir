@@ -1302,7 +1302,7 @@ def space_match_points(im1, im2, p1, p2, sw, kind='full'):
     return m1, m2
 
 # V0.1 2009-08-28 03:42:33 JB
-def space_G_transform(G, im, method = 0):
+def space_G_transform(G, im, method = 'NEAREST'):
     '''
     Apply homography transformation to an PIL image
     => G        homography matrix (numpy array 3x3)
@@ -1310,15 +1310,15 @@ def space_G_transform(G, im, method = 0):
     => <method> method use to warp image 'NEAREST', 'BILINEAR' or 'BICUBIC'
     <= res      PIL image transformed
     '''
-    from numpy import matrix, zeros
+    from numpy import matrix, zeros, array
     from sys   import stdout
 
     GI   = G.I
-    w, h = im[0].size
-    c0   = G * matrix([0, 0, 1]).T
-    c1   = G * matrix([w, 0, 1]).T
-    c2   = G * matrix([w, h, 1]).T
-    c3   = G * matrix([0, h, 1]).T
+    w, h = im.size
+    c0   = GI * matrix([0, 0, 1]).T
+    c1   = GI * matrix([w, 0, 1]).T
+    c2   = GI * matrix([w, h, 1]).T
+    c3   = GI * matrix([0, h, 1]).T
 
     l = min(c0[0], c1[0], c2[0], c3[0])
     r = max(c0[0], c1[0], c2[0], c3[0])
@@ -1352,23 +1352,23 @@ def space_G_transform(G, im, method = 0):
                 for c in xrange(Ch):
                     mat2[c][pixy, pixx] = mat1[c][y1i, x1i]
             elif method == 'BILINEAR':
+                if x1i < 1 or x1i >= w - 1 or y1i < 1 or y1i >= h - 1: continue
                 a0  = x1 - x1i
                 a1  = 1 - a0
                 a2  = y1 - y1i
                 a3  = 1 - a2
                 A   = array([[0, a2, 0], [a1, 1.0, a0], [0, a3, 0]])
-                # here need to check not over < 0 or > w, h
                 for c in xrange(Ch):
                     pix = mat1[c][y1i-1:y1i+2, x1i-1:x1i+2]
                     pix = pix * A
                     pix = pix.sum() / 5.0
                     mat2[c][pixy, pixx] = pix
-                
 
             pixx += 1
 
         pixy += 1
-        stdout.write('\rprocess %6.2f' % (pixy / float(him)) * 100)
+        stdout.write('\rprocess %6.2f %%' % (100 * pixy / float(him)))
+        stdout.flush()
  
     print ''
 

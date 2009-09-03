@@ -876,7 +876,8 @@ mosaicing <mat_1> <mat_2>
     H = geo_homography(p1, p2)
 
     res = space_G_transform(H.I, im2)
-    print H
+    print p1
+    print p2
     print H.I
     #res = space_merge(mat1, mat2, p1, p2, 'ada')
     WORLD['res'] = ['mat', res]
