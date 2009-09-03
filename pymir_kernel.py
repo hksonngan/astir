@@ -1340,26 +1340,26 @@ def space_G_transform(G, im, method = 'NEAREST'):
     for y in xrange(t, b + 1):
         pixx = 0
         for x in xrange(l, r + 1):
-            p1t        = GI * matrix([x, y, 1]).T
-            p1t       /= p1t[2]
-            p1t        = p1t.astype('int32')
-            p1t        = p1t.T
-            x1, y1, z1 = p1t.tolist()[0]
-            x1i, y1i   = int(x1), int(y1)
-            if x1i < 0 or x1i >= w or y1i < 0 or y1i >= h: continue
+            p2t        = G * matrix([x, y, 1]).T
+            p2t       /= p2t[2]
+            p2t        = p2t.astype('int32')
+            p2t        = p2t.T
+            x2, y2, z2 = p2t.tolist()[0]
+            x2i, y2i   = int(x2), int(y2)
+            if x2i < 0 or x2i >= w or y2i < 0 or y2i >= h: continue
 
             if   method == 'NEAREST':
                 for c in xrange(Ch):
-                    mat2[c][pixy, pixx] = mat1[c][y1i, x1i]
+                    mat2[c][pixy, pixx] = mat1[c][y2i, x2i]
             elif method == 'BILINEAR':
-                if x1i < 1 or x1i >= w - 1 or y1i < 1 or y1i >= h - 1: continue
-                a0  = x1 - x1i
+                if x2i < 1 or x2i >= w - 1 or y2i < 1 or y2i >= h - 1: continue
+                a0  = x2 - x2i
                 a1  = 1 - a0
-                a2  = y1 - y1i
+                a2  = y2 - y2i
                 a3  = 1 - a2
                 A   = array([[0, a2, 0], [a1, 1.0, a0], [0, a3, 0]])
                 for c in xrange(Ch):
-                    pix = mat1[c][y1i-1:y1i+2, x1i-1:x1i+2]
+                    pix = mat1[c][y2i-1:y2i+2, x2i-1:x2i+2]
                     pix = pix * A
                     pix = pix.sum() / 5.0
                     mat2[c][pixy, pixx] = pix
@@ -1372,7 +1372,7 @@ def space_G_transform(G, im, method = 'NEAREST'):
  
     print ''
 
-    return mat2
+    return mat2, l, t # (dx, dy)
 
 ## GEOMETRY ######################
 
