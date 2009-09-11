@@ -578,14 +578,14 @@ def image_mat2im(mat):
         img.putdata(g)
         imb.putdata(b)
         if mode == 3:
-            im  = Image.merge('RGB', (imb, img, imb))
+            im  = Image.merge('RGB', (imr, img, imb))
             return im
         elif mode == 4:
             a   = mat[3] * 255
             a   = list(reshape(mat[3], (nbp)))
             ima = Image.new('L', (w, h), 255)
             ima.putdata(a)
-            im  = Image.merge('RGBA', (imb, img, imb, ima))
+            im  = Image.merge('RGBA', (imr, img, imb, ima))
             return im
 
 # V0.1 2009-09-11 09:05:48 JB
@@ -595,11 +595,12 @@ def image_int2float(mat):
     => [mat] Numpy array [l], [r, g, b], or [r, g, b, a] 32 bits integer
     <= mat   Numpy array [l], [r, g, b], or [r, g, b, a] 32 bits float
     '''
-    for c in len(mat):
-        mat[c]  = mat[c].astype('float32')
-        mat[c] /= 255.0
+    newmat = []
+    for c in xrange(len(mat)):
+        newmat.append(mat[c].astype('float32'))
+        newmat[c] /= 255.0
 
-    return mat
+    return newmat
 
 # V0.1 2009-09-11 09:12:09 JB
 def image_float2int(mat):
@@ -608,11 +609,13 @@ def image_float2int(mat):
     => [mat] Numpy array [l], [r, g, b], or [r, g, b, a] 32 bits float
     <= mat   Numpy array [l], [r, g, b], or [r, g, b, a] 32 bits integer
     '''
-    for c in len(mat):
-        mat[c] *= 255
-        mat[c]  = mat[c].astype('int32')
+    newmat = []
+    for c in xrange(len(mat)):
+        newmat.append(mat[c].copy())
+        newmat[c] *= 255
+        newmat[c]  = newmat[c].astype('int32')
 
-    return mat
+    return newmat
 
 # V0.1 2008-12-07 00:35:17 JB
 # V0.2 2009-09-11 13:52:28 JB
@@ -667,7 +670,7 @@ def color_gray2color(im):
     <= im gray PIL image data OR Numpy array RGB
     '''
     if isinstance(im, list):
-        res = [im[0], im[0], im[0]]
+        res = [im[0].copy(), im[0].copy(), im[0].copy()]
     else:
         res = im.convert('RGB')
 
@@ -698,10 +701,10 @@ def color_colormap(mat, kind = 'hsv'):
     <= mat    Numpy array RGB 32 bit float
     '''
     from numpy import array, zeros, take
-    lutr   = zeros((255), 'int32')
-    lutg   = zeros((255), 'int32')
-    lutb   = zeros((255), 'int32')
-    mat    = image_float2int(mat)
+    lutr   = zeros((256), 'int32')
+    lutg   = zeros((256), 'int32')
+    lutb   = zeros((256), 'int32')
+    newmat = image_float2int(mat)
 
     if kind == 'jet':
         up  = array(range(0, 255,  3), 'int32')
@@ -722,6 +725,7 @@ def color_colormap(mat, kind = 'hsv'):
         lutg[stp:2*stp]   = up
         lutg[2*stp:]      = 255
         lutb[2*stp:3*stp] = up
+        lutb[3*stp:]      = 255
     else: # hsv kind default
         up  = array(range(0, 255,  5), 'int32')
         dw  = array(range(255, 0, -5), 'int32')
@@ -734,10 +738,10 @@ def color_colormap(mat, kind = 'hsv'):
         lutb[stp:2*stp]   = up
         lutb[2*stp:4*stp] = 255
         lutb[4*stp:5*stp] = dw
-
-    matr = take(lutr, mat)
-    matg = take(lutg, mat)
-    matb = take(lutb, mat)
+        
+    matr = take(lutr, newmat[0])
+    matg = take(lutg, newmat[0])
+    matb = take(lutb, newmat[0])
     res  = [matr, matg, matb]
     res  = image_int2float(res)
 

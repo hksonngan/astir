@@ -731,7 +731,7 @@ gray2color <seq_name> <seq_new_name>
         WORLD[trg] = ['seq', data]
         del data
 
-    del mat, im
+    del mat
 
     return 1
 
@@ -1047,11 +1047,14 @@ anaglyph im1 im2 res
     if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
         outbox_error('Only mat variable can be used')
         return -1
+    if len(WORLD[src1][1]) != 3 or len(WORLD[src2][1]) != 3:
+        outbox_error('Only RGB mat variable can be used')
+        return -1
     trg = args[2]
     if trg in lname:
         answer = inbox_overwrite(trg)
         if answer == 'n': return 0
-    res = image_anaglyph(src1, src2)
+    res = image_anaglyph(WORLD[src1][1], WORLD[src2][1])
     WORLD[trg] = ['mat', res]
     
     return 1
@@ -1084,7 +1087,7 @@ colormap im1 hot im_map
     if trg in lname:
         answer = inbox_overwrite(trg)
         if answer == 'n': return 0
-    res = color_colormap(src, kind)
+    res = color_colormap(WORLD[src][1], kind)
     WORLD[trg] = ['mat', res]
 
     return 1
@@ -1113,15 +1116,17 @@ add im1 im2 res
     if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
         outbox_error('Only mat variable can be used')
         return -1
+    trg   = args[2]
     if trg in lname:
         answer = inbox_overwrite(trg)
         if answer == 'n': return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
-    for c in len(mat1):
-        mat1[c] += mat2[c]
+    res  = []
+    for c in xrange(len(mat1)):
+        res.append(mat1[c] + mat2[c])
 
-    WORLD[trg] = ['mat', mat1]
+    WORLD[trg] = ['mat', res]
 
     return 1
 
@@ -1149,15 +1154,17 @@ add im1 im2 res
     if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
         outbox_error('Only mat variable can be used')
         return -1
+    trg   = args[2]
     if trg in lname:
         answer = inbox_overwrite(trg)
         if answer == 'n': return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
-    for c in len(mat1):
-        mat1[c] -= mat2[c]
+    res  = []
+    for c in xrange(len(mat1)):
+        res.append(mat1[c] - mat2[c])
 
-    WORLD[trg] = ['mat', mat1]
+    WORLD[trg] = ['mat', res]
 
     return 1
 
@@ -1185,15 +1192,17 @@ add im1 im2 res
     if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
         outbox_error('Only mat variable can be used')
         return -1
+    trg   = args[2]
     if trg in lname:
         answer = inbox_overwrite(trg)
         if answer == 'n': return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
-    for c in len(mat1):
-        mat1[c] *= mat2[c]
+    res  = []
+    for c in xrange(len(mat1)):
+        res.append(mat1[c] * mat2[c])
 
-    WORLD[trg] = ['mat', mat1]
+    WORLD[trg] = ['mat', res]
 
     return 1
 
@@ -1221,15 +1230,17 @@ add im1 im2 res
     if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
         outbox_error('Only mat variable can be used')
         return -1
+    trg   = args[2]
     if trg in lname:
         answer = inbox_overwrite(trg)
         if answer == 'n': return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
-    for c in len(mat1):
-        mat1[c] /= mat2[c]
+    res  = []
+    for c in xrange(len(mat1)):
+        res.append(mat1[c] / mat2[c])
 
-    WORLD[trg] = ['mat', mat1]
+    WORLD[trg] = ['mat', res]
 
     return 1
 
@@ -1477,6 +1488,9 @@ while 1 and not script_end:
         continue
     if progname == 'anaglyph':
         call_anaglyph(args)
+        continue
+    if progname == 'colormap':
+        call_colormap(args)
         continue
     if progname == 'add':
         call_add(args)
