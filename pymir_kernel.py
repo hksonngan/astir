@@ -910,15 +910,16 @@ def space_reg_ave(lmat, p, ws, tx, ty, N = -1):
         if mode == 1:
             mat1 = lmat[n][0].copy()
             mat2 = lmat[n + 1][0].copy()
+            im1  = image_mat2im(mat1)
+            im2  = image_mat2im(mat2)
+
         elif mode == 3:
             im1  = image_mat2im(lmat[n])
             im2  = image_mat2im(lmat[n + 1])
             im1  = color_color2gray(im1)
             im2  = color_color2gray(im2)
-            mat1 = image_im2mat(im1)[0]
-            mat2 = image_im2mat(im2)[0]
 
-        xp, yp   = space_align(mat1, mat2, p, ws, tx, ty)
+        xp, yp   = space_align(im1, im2, p, ws, tx, ty)
 
         p[0] += yp
         p[1] += xp
@@ -980,11 +981,11 @@ def space_reg_ave(lmat, p, ws, tx, ty, N = -1):
     return crop
 
 # V0.1 2009-03-07 11:33:27 JB
-def space_align(I1, I2, p1, sw, tx, ty, p2 = -1):
+def space_align(im1, im2, p1, sw, tx, ty, p2 = -1):
     '''
     Gridding aligment method between two images
-    => [I1]   image 1 (numarray only luminance)
-    => [I2]   image 2 (numarray only luminance)
+    => [im1]  PIL image 1 (only luminance)
+    => [im2]  PIL image 2 (only luminance)
     => [p1]   feature point tracked [y, x]
     => [sw]   window size tracked (must be odd)
     => [tx]   delta x to align (from p-tx to p+tx)
@@ -996,6 +997,8 @@ def space_align(I1, I2, p1, sw, tx, ty, p2 = -1):
     '''
 
     # I1 and I2 are mat
+    I1 = image_im2mat(im1)[0]
+    I2 = image_im2mat(im2)[0]
     rad  = sw // 2
     x1   = p1[1]
     y1   = p1[0]
@@ -1311,7 +1314,7 @@ def space_G_transform(G, im, method = 'NEAREST'):
     <= res      PIL image transformed
     '''
     from numpy import matrix, zeros, array
-    from sys   import stdout
+    from sys   import stdout, exit
 
     GI   = G.I
     w, h = im.size
@@ -1335,17 +1338,29 @@ def space_G_transform(G, im, method = 'NEAREST'):
     Ch   = len(mat1)
     mat2 = []
     for c in xrange(Ch): mat2.append(zeros((him, wim)))
-    
+    print wim, him
     pixy = 0
     for y in xrange(t, b + 1):
         pixx = 0
         for x in xrange(l, r + 1):
             p2t        = G * matrix([x, y, 1]).T
+
+            if (x == 256 or x == 65) and y == 49:
+                print p2t
+                #exit()
+
             p2t       /= p2t[2]
             p2t        = p2t.astype('int32')
             p2t        = p2t.T
             x2, y2, z2 = p2t.tolist()[0]
             x2i, y2i   = int(x2), int(y2)
+
+            if (x == 256 or x == 65) and y == 49:
+                print x2i, y2i
+                print pixx, pixy
+                
+
+
             if x2i < 0 or x2i >= w or y2i < 0 or y2i >= h: continue
 
             if   method == 'NEAREST':
@@ -1367,10 +1382,15 @@ def space_G_transform(G, im, method = 'NEAREST'):
             pixx += 1
 
         pixy += 1
+        #if pixy == 80: break
         stdout.write('\rprocess %6.2f %%' % (100 * pixy / float(him)))
         stdout.flush()
  
     print ''
+
+    print mat2[0].shape
+    print mat2[1].shape
+    print mat2[2].shape
 
     return mat2, l, t # (dx, dy)
 

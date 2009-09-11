@@ -859,23 +859,34 @@ mosaicing <mat_1> <mat_2>
     '''
     mat1   = WORLD[args[0]][1]
     mat2   = WORLD[args[1]][1]
+    ch     = len(mat1)
     ws     = 35
-
     im1    = image_mat2im(mat1)
     im2    = image_mat2im(mat2)
-    im1    = color_gray2color(im1)
-    im2    = color_gray2color(im2)
-    p1, p2 = image_show_stereo_get_pts(im1, im2, 4)
+    if   ch == 1:
+        im1c = color_gray2color(im1)
+        im2c = color_gray2color(im2)
+        im1g = im1
+        im2g = im2
+    elif ch == 3:
+        im1g = color_color2gray(im1)
+        im2g = color_color2gray(im2)
+        im1c = im1
+        im2c = im2
 
+    p1, p2 = image_show_stereo_get_pts(im1c, im2c, 4)
+    print p2
     for n in xrange(len(p1)):
         print 'Aligned match points %i' % n
-        xp, yp = space_align(mat1[0], mat2[0], p1[n], 35, 5, 5, p2[n])
+        xp, yp = space_align(im1g, im2g, p1[n], 35, 5, 5, p2[n])
         p2[0][0] = p1[0][0] + yp
         p2[0][1] = p1[0][1] + xp
-
+    print p2
+    
+    sys.exit()
     H = geo_homography(p1, p2)
 
-    res = space_G_transform(H.I, im2)
+    res, l, t = space_G_transform(H, im2, 'NEAREST')
     print p1
     print p2
     print H.I

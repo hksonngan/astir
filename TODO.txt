@@ -4,9 +4,24 @@ position des points image_show{get_pts, stereo_get_pts}
 O 2009-08-26 15:51:12 bug sur pc toto (linux) chargement de la vidéo
 de saturne est bleu au lieu de orange (swap des canaux??)
 
-O 2009-08-31 19:08:13 test transformation homographique
+
+
+O 2009-09-04 23:16:51 New feature 
+  - ajoute d'autre transformation, rotation, shift, rotshift, scale,
+  flipaxis
+  - cropping
+  - add text
+  - histogramme (eq auto)
+  - fause couleur
+  - ajuste couleur
+  - filtre
+  - alignement des canaux
+
+
 
 ======
+
+X 2009-08-31 19:08:13 test transformation homographique
 
 X 2009-08-26 15:49:41 ajouter le type de tracer de point avec le
 fenêtre de corrélation dans image_plot_points, puis l'ajouter dans
