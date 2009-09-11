@@ -31,9 +31,9 @@ from   pymir_kernel import image_read, image_write
 from   pymir_kernel import image_im2mat, image_mat2im
 from   pymir_kernel import image_show, image_show_get_pts
 from   pymir_kernel import image_plot_points, image_plot_lines, image_show_stereo_get_pts
-from   pymir_kernel import color_color2gray, color_gray2color
+from   pymir_kernel import color_color2gray, color_gray2color, color_colormap
 from   pymir_kernel import space_reg_ave, space_merge, space_align, space_G_transform
-from   pymir_kernel import resto_wiener
+from   pymir_kernel import resto_wiener, anaglyph
 from   pymir_kernel import geo_homography
 from   math import log
 import os, sys, optparse
@@ -46,7 +46,7 @@ listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var',
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
            'seq2mat', 'seq_reg_ave', 'load_vid', 'wiener', 'mosaicing',
-           'cut_seq', 'licence']
+           'cut_seq', 'licence', 'gray2color', 'anaglyph', 'colormap']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -640,9 +640,7 @@ color2gray <seq_name> <seq_new_name>
                 else: break
         else: trg = src
 
-        im  = image_mat2im(WORLD[src][1])
-        im  = color_color2gray(im)
-        mat = image_im2mat(im)
+        mat = color_color2gray(WORLD[src][1])
         WORLD[trg] = ['mat', mat]
 
     else:
@@ -661,9 +659,72 @@ color2gray <seq_name> <seq_new_name>
         bar  = progress_bar(nb, sizebar, 'Processing')
         data = []
         for n in xrange(nb):
-            im  = image_mat2im(WORLD[src][1][n])
-            im  = color_color2gray(im)
-            mat = image_im2mat(im)
+            mat  = color_color2gray(WORLD[src][1][n])
+            data.append(mat)
+            bar.update(n)
+        WORLD[trg] = ['seq', data]
+        del data
+
+    del mat, im
+
+    return 1
+
+def call_gray2color(args):
+    '''
+Convert mat gray sclae (Luminance) to color (RGB)
+Convert in-place
+gray2color <mat_name>
+Convert to new mat
+gray2color <mat_name> <mat_new_name>
+Convert a mat sequence in-place
+gray2color <seq_name>
+Convert a mat sequence to a new one
+gray2color <seq_name> <seq_new_name>
+    '''
+    if len(args) == 0 or len(args) > 2 or args[0] == '-h':
+        print call_gray2color.__doc__
+        return 0
+    lname = WORLD.keys()
+    src   = args[0]
+    if src not in lname:
+        outbox_exist(src)
+        return -1
+    kind  = WORLD[src][0]
+    if kind not in ['mat', 'seq']:
+        outbox_error('Only mat or seq variable can be converted')
+        return -1
+    if kind == 'mat':
+        if len(WORLD[src][1]) != 1:
+            outbox_error('Already in color')
+            return -1
+        if len(args) == 2:
+            trg = args[1]
+            while trg in lname:
+                answer = inbox_overwrite(trg)
+                if answer == 'n': trg == inbox_input('Change to a new name:')
+                else: break
+        else: trg = src
+
+        mat = color_gray2color(WORLD[src][1])
+        WORLD[trg] = ['mat', mat]
+
+    else:
+        if len(WORLD[src][1][0]) != 1:
+            outbox_error('Already in color')
+            return -1
+        if len(args) == 2:
+            trg = args[1]
+            while trg in lname:
+                answer = inbox_overwrite(trg)
+                if answer == 'n': trg == inbox_input('Change to a new name:')
+                else: break
+        else: trg = src
+
+        nb   = len(WORLD[src][1])
+        bar  = progress_bar(nb, sizebar, 'Processing')
+        data = []
+        for n in xrange(nb):
+            mat  = color_gray2color(WORLD[src][1][n])
             data.append(mat)
             bar.update(n)
         WORLD[trg] = ['seq', data]
@@ -963,6 +1024,70 @@ def call_licence(args):
 
     return 1
 
+def call_anaglyph(args):
+    '''
+Create an anaglyph image from two RGB matrix (right and left)
+anaglyph <mat_right> <mat_left> <new_mat_name>
+anaglyph im1 im2 res
+    '''
+    if len(args) != 3:
+        print call_anaglyph.__doc__
+        return 0
+
+    lname = WORLD.keys()
+    src1  = args[0]
+    if src1 not in lname:
+        outbox_exist(src1)
+        return -1
+    src2  = args[1]
+    if src2 not in lname:
+        outbox_exist(src2)
+        return -1
+    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
+        outbox_error('Only mat variable can be used')
+        return -1
+    trg = args[2]
+    if trg in lname:
+        answer = inbox_overwrite(trg)
+        if answer == 'n': return 0
+    res = anaglyph(src1, src2)
+    WORLD[trg] = ['mat', res]
+    
+    return 1
+
+def call_colormap(args):
+    '''
+Apply false-color to a luminance mat
+colormap <mat_name> <kind_of_map> <new_mat_name>
+different color of map: jet, hsv, hot
+
+colormap im1 hot im_map    
+    '''
+    if len(args) != 3:
+        print call_colormap.__doc__
+        return 0
+
+    lname = WORLD.keys()
+    src   = args[0]
+    if src not in lname:
+        outbox_exist(src)
+        return -1
+    kind  = args[1]
+    if kind not in ['jet', 'hsv', 'hot']:
+        outbox_error('Kind of map color unknown')
+        return -1
+    if WORLD[src][0] != 'mat' or len(WORLD[src][1]) != 1:
+        outbox_error('Only luminance mat varaible can bu used')
+        return -1
+    trg = args[2]
+    if trg in lname:
+        answer = inbox_overwrite(trg)
+        if answer == 'n': return 0
+    res = color_colormap(src, kind)
+    WORLD[trg] = ['mat', res]
+
+    return 1
+
 '''
 #=== documentation ==============
 print '# ls'
@@ -995,6 +1120,10 @@ print '# show_mat'
 print call_show_mat.__doc__
 print '# color2gray'
 print call_color2gray.__doc__
+print '# gray2color'
+print call_gray2color.__doc__
+print '# colormap'
+print call_colormap.__doc__
 print '# seq2mat'
 print call_seq2mat.__doc__
 print '# seq_reg_ave'
@@ -1136,6 +1265,9 @@ while 1 and not script_end:
     if progname == 'color2gray':
         call_color2gray(args)
         continue
+    if progname == 'gray2color':
+        call_gray2color(args)
+        continue
     if progname == 'seq2mat':
         call_seq2mat(args)
         continue    
@@ -1153,4 +1285,7 @@ while 1 and not script_end:
         continue
     if progname == 'licence':
         call_licence(args)
+        continue
+    if progname == 'anaglyph':
+        call_anaglyph(args)
         continue

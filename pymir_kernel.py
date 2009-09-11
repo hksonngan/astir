@@ -615,28 +615,33 @@ def image_float2int(mat):
     return mat
 
 # V0.1 2008-12-07 00:35:17 JB
+# V0.2 2009-09-11 13:52:28 JB
 def image_anaglyph(imr, iml):
     '''
     Create anaglyph image (3D) from right and left images, return image
-    => [imr] right PIL image data
-    => [iml] left PIL image data
-    <= anaglyphe PIL image data
+    => [imr] Right image Numpy array RGB
+    => [iml] Left image Numpy array RGB
+    <= ana   Anaglyph image Numpy array RGB
     '''
-    import Image
+    from numpy import ones
 
     # split
-    rr, gr, br = imr.split()
-    rl, gl, bl = iml.split()
+    rr, gr, br = imr
+    rl, gl, bl = iml
+    h, w       = rr.shape
 
     # process
-    new_gr  = Image.new('L', gr.size, 255)
-    new_rl  = Image.new('L', rl.size, 255)
-    new_bl  = Image.new('L', bl.size, 255)
-    new_imr = Image.merge('RGB', (br, new_gr, rr))
-    new_iml = Image.merge('RGB', (new_bl, gl, new_rl))
-    im_anag = Image.blend(new_imr, new_iml, 0.5)
+    new_gr  = ones((h, w))
+    new_rl  = ones((h, w))
+    new_bl  = ones((h, w))
+    new_bl += br
+    new_gr += gl
+    new_rl += rr
+    new_bl /= 2.0
+    new_gr /= 2.0
+    new_rl /= 2.0
  
-    return im_anag
+    return [new_rl, new_gr, new_bl]
 
 ## COLOR ####################
 # V0.1 2008-12-20 15:24:37 JB
