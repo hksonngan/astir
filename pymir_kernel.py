@@ -643,19 +643,30 @@ def image_anaglyph(imr, iml):
 def color_color2gray(im):
     '''
     Convert color image to gray image
-    => [im] color PIL image data
-    <= im gray PIL image data
+    => [im] color PIL image data OR Numpy array RGB
+    <= im gray PIL image data OR Numpy array L
     '''
-    return im.convert('L')
+    if isinstance(im, list):
+        res = im[0] * 0.299 + im[1] * 0.587 + im[2] * 0.114
+        res = [res]
+    else:
+        res = im.convert('L')
+
+    return res
 
 # V0.1 2009-03-27 15:41:14 JB
 def color_gray2color(im):
     '''
     Convert gray image to color image
-    => [im] color PIL image data
-    <= im gray PIL image data
+    => [im] color PIL image data OR Numpy array L
+    <= im gray PIL image data OR Numpy array RGB
     '''
-    return im.convert('RGB')
+    if isinstance(im, list):
+        res = [im[0], im[0], im[0]]
+    else:
+        res = im.convert('RGB')
+
+    return res
 
 # V0.1 2008-12-20 21:11:38 JB
 def color_norm_gray(mat):
