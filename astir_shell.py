@@ -33,7 +33,7 @@ from   pymir_kernel import image_show, image_show_get_pts
 from   pymir_kernel import image_plot_points, image_plot_lines, image_show_stereo_get_pts
 from   pymir_kernel import color_color2gray, color_gray2color, color_colormap
 from   pymir_kernel import space_reg_ave, space_merge, space_align, space_G_transform
-from   pymir_kernel import resto_wiener, anaglyph
+from   pymir_kernel import resto_wiener, image_anaglyph
 from   pymir_kernel import geo_homography
 from   math import log
 import os, sys, optparse
@@ -1050,7 +1050,7 @@ anaglyph im1 im2 res
     if trg in lname:
         answer = inbox_overwrite(trg)
         if answer == 'n': return 0
-    res = anaglyph(src1, src2)
+    res = image_anaglyph(src1, src2)
     WORLD[trg] = ['mat', res]
     
     return 1
