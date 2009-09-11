@@ -46,7 +46,8 @@ listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var',
            'load_var', 'add', 'fun', 'save_world', 'load_world',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
            'seq2mat', 'seq_reg_ave', 'load_vid', 'wiener', 'mosaicing',
-           'cut_seq', 'licence', 'gray2color', 'anaglyph', 'colormap']
+           'cut_seq', 'licence', 'gray2color', 'anaglyph', 'colormap', 
+           'sub', 'div', 'mul']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -312,7 +313,7 @@ fun
         return 0
     listfun.sort()
     sfun = len(listfun)
-    nc   = 3  # cst 3 columns
+    nc   = 4  # cst 4 columns
     if sfun % nc == 0: nl = sfun // nc
     else:              nl = (sfun // nc) + 1
     smax = 0
@@ -1077,7 +1078,7 @@ colormap im1 hot im_map
         outbox_error('Kind of map color unknown')
         return -1
     if WORLD[src][0] != 'mat' or len(WORLD[src][1]) != 1:
-        outbox_error('Only luminance mat varaible can bu used')
+        outbox_error('Only luminance mat varaible can be used')
         return -1
     trg = args[2]
     if trg in lname:
@@ -1087,6 +1088,151 @@ colormap im1 hot im_map
     WORLD[trg] = ['mat', res]
 
     return 1
+
+def call_add(args):
+    '''
+Add two mat variables (L or RGB)
+mat_c = mat_a + mat_b
+add <mat_a> <mat_b> <mat_c>
+
+add im1 im2 res
+    '''
+    if len(args) != 3:
+        print call_add.__doc__
+        return 0
+
+    lname = WORLD.keys()
+    src1  = args[0]
+    if src1 not in lname:
+        outbox_exist(src1)
+        return -1
+    src2  = args[1]
+    if src2 not in lname:
+        outbox_exist(src2)
+        return -1
+    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
+        outbox_error('Only mat variable can be used')
+        return -1
+    if trg in lname:
+        answer = inbox_overwrite(trg)
+        if answer == 'n': return 0
+    mat1 = WORLD[src1][1]
+    mat2 = WORLD[src2][1]
+    for c in len(mat1):
+        mat1[c] += mat2[c]
+
+    WORLD[trg] = ['mat', mat1]
+
+    return 1
+
+def call_sub(args):
+    '''
+Substract two mat variables (L or RGB)
+mat_c = mat_a - mat_b
+add <mat_a> <mat_b> <mat_c>
+
+add im1 im2 res
+    '''
+    if len(args) != 3:
+        print call_sub.__doc__
+        return 0
+
+    lname = WORLD.keys()
+    src1  = args[0]
+    if src1 not in lname:
+        outbox_exist(src1)
+        return -1
+    src2  = args[1]
+    if src2 not in lname:
+        outbox_exist(src2)
+        return -1
+    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
+        outbox_error('Only mat variable can be used')
+        return -1
+    if trg in lname:
+        answer = inbox_overwrite(trg)
+        if answer == 'n': return 0
+    mat1 = WORLD[src1][1]
+    mat2 = WORLD[src2][1]
+    for c in len(mat1):
+        mat1[c] -= mat2[c]
+
+    WORLD[trg] = ['mat', mat1]
+
+    return 1
+
+def call_mul(args):
+    '''
+Multiply two mat variables (L or RGB)
+mat_c = mat_a * mat_b
+add <mat_a> <mat_b> <mat_c>
+
+add im1 im2 res
+    '''
+    if len(args) != 3:
+        print call_mul.__doc__
+        return 0
+
+    lname = WORLD.keys()
+    src1  = args[0]
+    if src1 not in lname:
+        outbox_exist(src1)
+        return -1
+    src2  = args[1]
+    if src2 not in lname:
+        outbox_exist(src2)
+        return -1
+    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
+        outbox_error('Only mat variable can be used')
+        return -1
+    if trg in lname:
+        answer = inbox_overwrite(trg)
+        if answer == 'n': return 0
+    mat1 = WORLD[src1][1]
+    mat2 = WORLD[src2][1]
+    for c in len(mat1):
+        mat1[c] *= mat2[c]
+
+    WORLD[trg] = ['mat', mat1]
+
+    return 1
+
+def call_div(args):
+    '''
+Divide two mat variables (L or RGB)
+mat_c = mat_a / mat_b
+add <mat_a> <mat_b> <mat_c>
+
+add im1 im2 res
+    '''
+    if len(args) != 3:
+        print call_div.__doc__
+        return 0
+
+    lname = WORLD.keys()
+    src1  = args[0]
+    if src1 not in lname:
+        outbox_exist(src1)
+        return -1
+    src2  = args[1]
+    if src2 not in lname:
+        outbox_exist(src2)
+        return -1
+    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
+        outbox_error('Only mat variable can be used')
+        return -1
+    if trg in lname:
+        answer = inbox_overwrite(trg)
+        if answer == 'n': return 0
+    mat1 = WORLD[src1][1]
+    mat2 = WORLD[src2][1]
+    for c in len(mat1):
+        mat1[c] /= mat2[c]
+
+    WORLD[trg] = ['mat', mat1]
+
+    return 1
+
 
 '''
 #=== documentation ==============
@@ -1136,6 +1282,14 @@ print '# mosaicing'
 print call_mosaicing.__doc__
 print '# cut_seq'
 print call_cut_seq.__doc__
+print '# add'
+print call_add.__doc__
+print '# sub'
+print call_sub.__doc__
+print '# mul'
+print call_mul.__doc__
+print '# div'
+print call_div.__doc__
 sys.exit()
 '''
 
@@ -1242,13 +1396,6 @@ while 1 and not script_end:
     if progname == 'load_world':
         call_load_world(args)
         continue
-    ## TO DEBUG
-    if progname == 'add':
-        name = args[0]
-        size = int(args[1])
-        V = [0] * size
-        WORLD[name] = ['var', V]
-        continue
     #=== Pymir command
     if progname == 'load_im':
         call_load_im(args)
@@ -1288,4 +1435,16 @@ while 1 and not script_end:
         continue
     if progname == 'anaglyph':
         call_anaglyph(args)
+        continue
+    if progname == 'add':
+        call_add(args)
+        continue
+    if progname == 'sub':
+        call_sub(args)
+        continue
+    if progname == 'mul':
+        call_mul(args)
+        continue
+    if progname == 'div':
+        call_div(args)
         continue
