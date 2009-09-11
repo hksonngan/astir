@@ -1250,7 +1250,7 @@ Return information about the mat variable (size, stats, format, ...)
 info <mat_name>
 info im1
     '''
-    if len(args) != 2:
+    if len(args) != 1:
         print call_info.__doc__
         return 0
 
@@ -1277,8 +1277,8 @@ info im1
         max  = mat[c].max()
         mean = mat[c].mean()
         var  = mat[c] - mean
-        var *= buf
-        var  = buf.sum()
+        var *= var
+        var  = var.sum()
         var /= float(mat[c].size)
         std  = sqrt(var)
         print 'min: %s%5.3f%s max: %s%5.3f%s mean: %s%5.3f%s var: %s%5.3f%s std: %s%5.3f%s' % (c3, min, N, c3, max, N, c3, mean, N, c3, var, N, c3, std, N)
@@ -1503,4 +1503,7 @@ while 1 and not script_end:
         continue
     if progname == 'div':
         call_div(args)
+        continue
+    if progname == 'info':
+        call_info(args)
         continue
