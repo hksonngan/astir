@@ -588,6 +588,32 @@ def image_mat2im(mat):
             im  = Image.merge('RGBA', (imb, img, imb, ima))
             return im
 
+# V0.1 2009-09-11 09:05:48 JB
+def image_int2float(mat):
+    '''
+    Transform numpy array 32 bits int (0-255) to 32 bits float (0.0-1.0)
+    => [mat] Numpy array [l], [r, g, b], or [r, g, b, a] 32 bits integer
+    <= mat   Numpy array [l], [r, g, b], or [r, g, b, a] 32 bits float
+    '''
+    for c in len(mat):
+        mat[c]  = mat[c].astype('float32')
+        mat[c] /= 255.0
+
+    return mat
+
+# V0.1 2009-09-11 09:12:09 JB
+def image_float2int(mat):
+    '''
+    Transform numpy array 32 bits float (0.0-1.0) to 32 bits int (0-255)
+    => [mat] Numpy array [l], [r, g, b], or [r, g, b, a] 32 bits float
+    <= mat   Numpy array [l], [r, g, b], or [r, g, b, a] 32 bits integer
+    '''
+    for c in len(mat):
+        mat[c] *= 255
+        mat[c]  = mat[c].astype('int32')
+
+    return mat
+
 # V0.1 2008-12-07 00:35:17 JB
 def image_anaglyph(imr, iml):
     '''
@@ -634,8 +660,8 @@ def color_gray2color(im):
 # V0.1 2008-12-20 21:11:38 JB
 def color_norm_gray(mat):
     '''
-    Normalize gray scale color of a numpy array (0 to 255)
-    => [mat] Numpy array L or RGB
+    Normalize gray scale color of a numpy array (0.0 to 1.0)
+    => [mat] Numpy array L, RGB ot RGBA
     <= mat   Numpy array normalized
     '''
     norm = []
@@ -646,6 +672,60 @@ def color_norm_gray(mat):
         norm.append(tmp)
 
     return norm
+
+#V0.1 2009-09-11 10:56:04 JB
+def color_colormap(mat, kind = 'hsv'):
+    '''
+    Color image with false-color
+    => [mat]  Numpy array L 32 bit float
+    => <kind> Colormap hsv, jet or hot (default is hsv)
+    <= mat    Numpy array RGB 32 bit float
+    '''
+    from numpy import array, zeros, take
+    lutr   = zeros((255), 'int32')
+    lutg   = zeros((255), 'int32')
+    lutb   = zeros((255), 'int32')
+    mat    = image_float2int(mat)
+
+    if kind == 'jet':
+        up  = array(range(0, 255,  3), 'int32')
+        dw  = array(range(255, 0, -3), 'int32')
+        stp = 85
+        lutr[stp:2*stp]   = up
+        lutr[2*stp:]      = 255
+        lutg[0:stp]       = up
+        lutg[stp:2*stp]   = 255
+        lutg[2*stp:3*stp] = dw
+        lutb[0:stp]       = 255
+        lutb[stp:2*stp]   = dw
+    elif kind == 'hot':
+        up  = array(range(0, 255,  3), 'int32')
+        stp = 85
+        lutr[0:stp]       = up
+        lutr[stp:]        = 255
+        lutg[stp:2*stp]   = up
+        lutg[2*stp:]      = 255
+        lutb[2*stp:3*stp] = up
+    else: # hsv kind default
+        up  = array(range(0, 255,  5), 'int32')
+        dw  = array(range(255, 0, -5), 'int32')
+        stp = 51
+        lutr[0:stp]       = dw
+        lutr[3*stp:4*stp] = up
+        lutr[4*stp:]      = 255
+        lutg[0:2*stp]     = 255
+        lutg[2*stp:3*stp] = dw
+        lutb[stp:2*stp]   = up
+        lutb[2*stp:4*stp] = 255
+        lutb[4*stp:5*stp] = dw
+
+    matr = take(lutr, mat)
+    matg = take(lutg, mat)
+    matb = take(lutb, mat)
+    res  = [matr, matg, matb]
+    res  = image_int2float(res)
+
+    return res
 
 ## SPACE ####################
 

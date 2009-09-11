@@ -64,7 +64,7 @@ WORLD  = {}
 
 # read history
 readline.set_history_length(500)
-histfile = os.path.join(os.environ["HOME"], ".astir_history")
+histfile = os.path.join(os.environ['HOME'], '.astir_history')
 try:
     readline.read_history_file(histfile)
 except IOError:
