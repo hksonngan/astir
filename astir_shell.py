@@ -35,7 +35,7 @@ from   pymir_kernel import color_color2gray, color_gray2color, color_colormap
 from   pymir_kernel import space_reg_ave, space_merge, space_align, space_G_transform
 from   pymir_kernel import resto_wiener, image_anaglyph
 from   pymir_kernel import geo_homography
-from   math import log
+from   math         import log, sqrt
 import os, sys, optparse
 import readline # allow to back line in the shell
 import cPickle, atexit
@@ -47,7 +47,7 @@ listfun = ['exit', 'ls', 'rm', 'mv', 'cp', 'mem', 'save_var',
            'ldir', 'load_im', 'save_im', 'show_mat', 'color2gray',
            'seq2mat', 'seq_reg_ave', 'load_vid', 'wiener', 'mosaicing',
            'cut_seq', 'licence', 'gray2color', 'anaglyph', 'colormap', 
-           'sub', 'div', 'mul']
+           'sub', 'div', 'mul', 'info']
 
 B  = '\033[0;34m' # blue
 BC = '\033[0;36m' # blue clear (or blue sky)
@@ -1233,6 +1233,46 @@ add im1 im2 res
 
     return 1
 
+def call_info(args):
+    '''
+Return information about the mat variable (size, stats, format, ...)
+info <mat_name>
+info im1
+    '''
+    if len(args) != 2:
+        print call_info.__doc__
+        return 0
+
+    lname = WORLD.keys()
+    src   = args[0]
+    if src not in lname:
+        outbox_exist(src)
+        return -1
+    if WORLD[src][0] != 'mat':
+        outbox_error('Only mat variable can be used')
+        return -1
+
+    mat = WORLD[src][1]
+    c1, c2, c3  = G, B, Y
+    print 'Name: %s%s%s Type: %s%s%s' % (c1, src, N, c1, 'mat', N)
+    if   len(mat) == 1: mode = 'L'
+    elif len(mat) == 3: mode = 'RGB'
+    elif len(mat) == 4: mode = 'RGBA'
+    print 'Mode: %s%s%s Size: %s%ix%i%s Format: %s%s%s' % (c1, mode, N, c1, mat[0].shape[1], mat[0].shape[0], N, c1, mat[0].dtype, N)
+    print ''
+    for c in xrange(len(mat)):
+        print 'Channel %s%i%s' % (c2, c, N)
+        min  = mat[c].min()
+        max  = mat[c].max()
+        mean = mat[c].mean()
+        var  = mat[c] - mean
+        var *= buf
+        var  = buf.sum()
+        var /= float(mat[c].size)
+        std  = sqrt(var)
+        print 'min: %s%5.3f%s max: %s%5.3f%s mean: %s%5.3f%s var: %s%5.3f%s std: %s%5.3f%s' % (c3, min, N, c3, max, N, c3, mean, N, c3, var, N, c3, std, N)
+
+    return 1
 
 '''
 #=== documentation ==============
@@ -1290,6 +1330,8 @@ print '# mul'
 print call_mul.__doc__
 print '# div'
 print call_div.__doc__
+print '# info'
+print call_info.__doc__
 sys.exit()
 '''
 
