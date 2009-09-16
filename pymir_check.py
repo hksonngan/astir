@@ -63,37 +63,16 @@ try:
 except:
     info.write('[E]\n')
 
-info.write('Tkinter........')
+info.write('ctypes.........')
 try:
-    import Tkinter
+    import ctypes
     info.write('[ok]\n')
 except:
     info.write('[E]\n')
 
-info.write('PIL............')
+info.write('pylibtiff......')
 try:
-    import PIL
-    info.write('[ok]\n')
-except:
-    info.write('[E]\n')
-
-info.write('ImageTk........')
-try:
-    from PIL import ImageTk
-    info.write('[ok]\n')
-except:
-    info.write('[E]\n')
-
-info.write('ImageDraw......')
-try:
-    import ImageDraw
-    info.write('[ok]\n')
-except:
-    info.write('[E]\n')
-
-info.write('Image..........')
-try:
-    import Image
+    import libtiff
     info.write('[ok]\n')
 except:
     info.write('[E]\n')
@@ -108,6 +87,13 @@ except:
 info.write('Scipy..........')
 try:
     import scipy
+    info.write('[ok]\n')
+except:
+    info.write('[E]\n')
+
+info.write('Matplotlib.....')
+try:
+    import matplotlib
     info.write('[ok]\n')
 except:
     info.write('[E]\n')
