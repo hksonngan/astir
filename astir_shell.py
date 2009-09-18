@@ -75,6 +75,8 @@ except IOError:
 # save always before exit, even when sys.exit is raised
 atexit.register(readline.write_history_file, histfile)
 
+# errors flag: succes 1, nothing 0, error -1
+
 #=== shell functions ============
 def inbox_overwrite(name):
     answer = ''
@@ -124,6 +126,15 @@ def check_name(names):
         if name not in lname:
             outbox_exist(name)
             return -1
+    return 1
+
+def check_overwrite(names):
+    if not isinstance(names, list): names = [names]
+    lname = WORLD.keys()
+    for name in names:
+        if name not in lname:
+            answer = inbox_overwrite(name)
+            if answer == 'n': return 0
     return 1
 
 def check_seq(names):
