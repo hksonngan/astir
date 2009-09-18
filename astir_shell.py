@@ -61,6 +61,8 @@ Y  = '\033[0;33m' # yellow
 sizebar = 32
 
 # WORLD structure: WORLD['keyname'] = [header, data]
+# header = 'seq' or 'mat'
+# data   = array(high, width, nb_channel)
 WORLD  = {}
 
 # read history
@@ -114,6 +116,33 @@ def outbox_error(message):
 
 def outbox_bang(message):
     print '%s!!%s %s' % (B, N, message)
+
+def check_name(names):
+    if not isinstance(names, list): names = [names]
+    lname = WORLD.keys()
+    for name in names:
+        if name not in lname:
+            outbox_exist(name)
+            return -1
+    return 1
+
+def check_seq(names):
+    if not isinstance(names, list): names = [names]
+    lname = WORLD.keys()
+    for name in names:
+        if WORLD[name][0] != 'seq':
+            outbox_error('Only seq varaible can be used')
+            return -1
+    return 1
+
+def check_mat(names):
+    if not isinstance(names, list): names = [names]
+    lname = WORLD.keys()
+    for name in names:
+        if WORLD[name][0] != 'mat':
+            outbox_error('Only mat varaible can be used')
+            return -1
+    return 1
 
 class progress_bar:
     def __init__(self, valmax, maxbar, title):
