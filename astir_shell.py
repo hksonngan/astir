@@ -1408,102 +1408,10 @@ while 1 and not script_end:
         except:
             outbox_bang(' 8-/')
             continue
-            
-    #=== parser and caller ======
 
-    #=== basic functions
     if progname == 'exit':
         print 'bye'
         sys.exit(0)
-    if progname == 'ls':
-        call_ls(args)
-        continue
-    if progname == 'ldir':
-        call_ldir(args)
-        continue
-    if progname == 'rm':
-        call_rm(args)
-        continue
-    if progname == 'mv':
-        call_mv(args)
-        continue       
-    if progname == 'cp':
-        call_cp(args)
-        continue
-    if progname == 'mem':
-        call_mem(args)
-        continue
-    if progname == 'fun':
-        call_fun(args)
-        continue
-    #=== input/output cmd
-    if progname == 'save_var':
-        call_save_var(args)
-        continue
-    if progname == 'save_world':
-        call_save_world(args)
-        continue
-    if progname == 'load_var':
-        call_load_var(args)
-        continue
-    if progname == 'load_world':
-        call_load_world(args)
-        continue
-    #=== Pymir command
-    if progname == 'load_im':
-        call_load_im(args)
-        continue
-    if progname == 'save_im':
-        call_save_im(args)
-        continue
-    if progname == 'load_vid':
-        call_load_vid(args)
-        continue
-    if progname == 'show_mat':
-        call_show_mat(args)
-        continue
-    if progname == 'color2gray':
-        call_color2gray(args)
-        continue
-    if progname == 'gray2color':
-        call_gray2color(args)
-        continue
-    if progname == 'seq2mat':
-        call_seq2mat(args)
-        continue    
-    if progname == 'seq_reg_ave':
-        call_seq_reg_ave(args)
-        continue
-    if progname == 'wiener':
-        call_wiener(args)
-        continue
-    if progname == 'mosaicing':
-        call_mosaicing(args)
-        continue
-    if progname == 'cut_seq':
-        call_cut_seq(args)
-        continue
-    if progname == 'licence':
-        call_licence(args)
-        continue
-    if progname == 'anaglyph':
-        call_anaglyph(args)
-        continue
-    if progname == 'colormap':
-        call_colormap(args)
-        continue
-    if progname == 'add':
-        call_add(args)
-        continue
-    if progname == 'sub':
-        call_sub(args)
-        continue
-    if progname == 'mul':
-        call_mul(args)
-        continue
-    if progname == 'div':
-        call_div(args)
-        continue
-    if progname == 'info':
-        call_info(args)
-        continue
+
+    # caller
+    eval('call_%s(args)' % progname)
