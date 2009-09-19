@@ -558,7 +558,7 @@ Chared des images depuis des fichiers.
     '''
     usage = 'load_im <file_name.[bmp, jpg, png, tiff]>\nload_im file_na*.png'
     prog  = 'load_im'
-    desc  = call_ls.__doc__
+    desc  = call_load_im.__doc__
     p = OptionParser(description = desc, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
@@ -618,42 +618,54 @@ Chared des images depuis des fichiers.
         del seq
 
     return 1
-"""
+
 def call_save_im(args):
     '''
-Save image from a variable to a file
+Save image(s) from a variable (mat/seq) to a file(s).
+Sauvegarde une ou des images depuis une variable (mat/seq) vers un ou des fichiers
 save_im <mat_name> <file_name.[bmp, jpg, png]>
     '''
+    usage = 'save_im <var_name> <file_name.[bmp, jpg, png, tiff]>\nsave_im im0 im.png\nsave_im vid im.png'
+    prog  = 'save_im'
+    desc  = call_save_im.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) != 2:
-        print call_save_im.__doc__
+        p.print_help()
         return 0
     name  = args[0]
     fname = args[1]
     if not check_name(name): return -1
-    if not check_mat(name):  return -1
-    lext = ['jpg', 'png', 'bmp']
-    ext = 'png'
+    lext = ['jpg', 'png', 'bmp', 'tiff']
     if len(fname.split('.')) != 2:
-        outbox_bang('Must have an extension, set default to png')
-        ext = 'png'
-    else:
-        [fname, ext] = fname.split('.')
-        if ext not in lext:
-            outbox_error('Wrong extension, only jpg, png, or bmp')
-            return -1
-    fname = fname + '.' + ext
-    lname = os.listdir('.')
-    if fname in lname:
-        answer = inbox_overwrite(fname)
-        if answer == 'n': return 0
-    mat = WORLD[name][1]
-    im  = image_mat2im(mat)
-    del mat
-    image_write(im, fname)
-    del im
+        outbox_error('File name must have an extension')
+        return -1
+    [fname, ext] = fname.split('.')
+    if ext not in lext:
+        outbox_error('Wrong extension, only jpg, png, bmp or tiff')
+        return -1
+    kind = WORLD[name][0]
+    if kind == 'mat':
+        fname = fname + '.' + ext
+        if not check_overwrite_file(fname): return -1
+        im = WORLD[name][1]
+        image_write(im, fname)
+        del im, fname
+    elif kind == 'seq':
+        nb    = WORLD[name][1].shape[0]
+        names = [fname + '_%04i.' % i + ext for i in xrange(nb)]
+        if not check_overwrite_file(names): return -1
+        bar = progress_bar(nb, sizebar, 'writing')
+        for i in xrange(nb):
+            im = WORLD[name][1][i]
+            image_write(im, names[i])
+            bar.update(i)
+        del im, bar, nb, names
 
     return 1
-
+"""
 def call_show_mat(args):
     '''
 Display a mat variable as an image
