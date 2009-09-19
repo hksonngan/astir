@@ -193,7 +193,8 @@ Listing all variables in work space
 Liste toutes les variables dans l\'espace de travail
     '''
     usage = 'ls'
-    p = OptionParser(description=call_ls.__doc__, prog = 'ls', version = version)
+    prog  = 'ls'
+    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -235,7 +236,8 @@ Listing of the current directory
 Liste du dossier courant
     '''
     usage = 'ldir'
-    p = OptionParser(description=call_ls.__doc__, prog = 'ldir', version = version)
+    prog  = 'ldir'
+    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -251,7 +253,8 @@ Remove variables in work space
 Efface des variables dans l\'espace de travail
     '''
     usage = 'rm <name>\nrm <name1> <name2>\nrm <na*>\nrm <*>'
-    p = OptionParser(description=call_ls.__doc__, prog = 'rm', version = version)
+    prog  = 'rm'
+    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -289,7 +292,8 @@ Move/rename variable
 Déplace/renomme une variable
     '''
     usage = 'mv <source_name> <target_name>\nmv im0 im1'
-    p = OptionParser(description=call_ls.__doc__, prog = 'mv', version = version)
+    prog  = 'mv'
+    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -304,25 +308,29 @@ Déplace/renomme une variable
     del data
 
     return 1
-"""
+
 def call_cp(args):
     '''
 Copy variable
-cp <source_name> <target_name>
+Copie une variable
     '''
-    if len(args) == 0 or len(args) > 2 or args[0] == '-h':
-        print call_cp.__doc__
+    usage = 'cp <source_name> <target_name>\ncp im0 im1'
+    prog  = 'cp'
+    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) =! 2:
+        p.print_help()
         return 0
-    src = args[0]
-    trg = args[1]
+    src, trg = args
     if not check_name(src):      return -1
-    if not check_overwrite(trg): return 0
-    data = WORLD[src]
-    WORLD[trg] = data
+    if not check_overwrite(trg): return  0
+    WORLD[trg] = deepcopy(WORLD[src])
     del data
 
     return 1
-
+"""
 def call_mem(args):
     '''
 Memories used in work space by the variables
