@@ -132,9 +132,16 @@ def check_overwrite(names):
     if not isinstance(names, list): names = [names]
     lname = WORLD.keys()
     for name in names:
-        if name not in lname:
+        if name in lname:
             answer = inbox_overwrite(name)
             if answer == 'n': return 0
+    '''
+    while trg in lname:
+        answer = inbox_overwrite(trg)
+        if answer == 'n': trg == inbox_input('Change to a new name:')
+        else: break
+    '''
+
     return 1
 
 def check_seq(names):
@@ -273,16 +280,13 @@ mv <source_name> <target_name>
     if len(args) != 2 or args[0] == '-h':
         print call_mv.__doc__
         return 0
-    try: data = WORLD[args[0]]
-    except KeyError:
-        outbox_exist(args[0])
-        return -1
-    keys = WORLD.keys()
-    if args[1] in keys:
-        answer = inbox_overwrite(args[1])
-        if answer == 'n': return 0
-    WORLD[args[1]] = data
-    del WORLD[args[0]]
+    src = args[0]
+    trg = args[1]
+    if not check_name(src):      return -1
+    if not check_overwrite(trg): return 0
+    data = WORLD[src]
+    WORLD[trg] = data
+    del WORLD[src]
     del data
 
     return 1
@@ -295,15 +299,12 @@ cp <source_name> <target_name>
     if len(args) == 0 or len(args) > 2 or args[0] == '-h':
         print call_cp.__doc__
         return 0
-    try: data = WORLD[args[0]]
-    except KeyError:
-        outbox_exist(args[0])
-        return -1
-    keys = WORLD.keys()
-    if args[1] in keys:
-        answer = inbox_overwrite(args[1])
-        if answer == 'n': return 0
-    WORLD[args[1]] = data
+    src = args[0]
+    trg = args[1]
+    if not check_name(src):      return -1
+    if not check_overwrite(trg): return 0
+    data = WORLD[src]
+    WORLD[trg] = data
     del data
 
     return 1
@@ -378,12 +379,9 @@ save_var <var_name> <file_name>
     if len(args) != 2:
         print call_save_var.__doc__
         return 0
-    lname = WORLD.keys()
     name  = args[0]
     fname = args[1]
-    if name not in lname:
-        outbox_exist(name)
-        return -1
+    if not check_name(name): return -1
     lname = os.listdir('.')
     if fname in lname:
         answer = inbox_overwrite(fname)
@@ -562,15 +560,10 @@ save_im <mat_name> <file_name.[bmp, jpg, png]>
     if len(args) != 2:
         print call_save_im.__doc__
         return 0
-    lname = WORLD.keys()
     name  = args[0]
     fname = args[1]
-    if name not in lname:
-        outbox_exist(name)
-        return -1
-    if WORLD[name][0] != 'mat':
-        outbox_error('Only mat variable can be exported to image')
-        return -1
+    if not check_name(name): return -1
+    if not check_mat(name):  return -1
     lext = ['jpg', 'png', 'bmp']
     ext = 'png'
     if len(fname.split('.')) != 2:
@@ -606,43 +599,17 @@ show_mat <mat1_name> <mat2_name> ...
     if len(args) == 0 or args[0] == '-h':
         print call_show_mat.__doc__
         return 0
-    lname = WORLD.keys()
     list_im = []
+    if not check_name(args): return -1
+    if not check_mat(args):  return -1    
     for name in args:
-        if name not in lname:
-            outbox_exist(name)
-            return -1
-        if WORLD[name][0] != 'mat':
-            outbox_error('Only mat variable can be displayed')
-            return -1
-    
         mat = WORLD[name][1]
         im  = image_mat2im(mat)
         list_im.append(im)
 
     image_show(list_im)
     del list_im, args
-    '''
-    # 2009-08-24 08:44:10 JB
-    # disable the grid no body uses it
-    if len(args) > 1:
-        if args[1][0] != 'g':
-            outbox_error('Argument %s incorrect' % args[1])
-            return -1
-        else:
-            try: g = int(args[1][1:])
-            except:
-                outbox_error('Argument %s incorrect' % args[1])
-                return -1
-            if g < 1 or g > 200:
-                outbox_error('Argument g incorrect [1; 200]')
-                return -1
-            image_show_grid(im, g)
-            del g
-    else:
-        image_show(im)
-        del im, mat
-    '''
+
     return 1
 
 def call_color2gray(args):
@@ -657,14 +624,12 @@ color2gray <seq_name>
 Convert a mat sequence to a new one
 color2gray <seq_name> <seq_new_name>
     '''
+    # TODO check vefore process if trg exist
     if len(args) == 0 or len(args) > 2 or args[0] == '-h':
         print call_color2gray.__doc__
         return 0
-    lname = WORLD.keys()
     src   = args[0]
-    if src not in lname:
-        outbox_exist(src)
-        return -1
+    if not check_name(src): return -1
     kind  = WORLD[src][0]
     if kind not in ['mat', 'seq']:
         outbox_error('Only mat or seq variable can be converted')
@@ -690,10 +655,7 @@ color2gray <seq_name> <seq_new_name>
             return -1
         if len(args) == 2:
             trg = args[1]
-            while trg in lname:
-                answer = inbox_overwrite(trg)
-                if answer == 'n': trg == inbox_input('Change to a new name:')
-                else: break
+            if not check_overwrite(trg): return -1
         else: trg = src
 
         nb   = len(WORLD[src][1])
@@ -722,14 +684,12 @@ gray2color <seq_name>
 Convert a mat sequence to a new one
 gray2color <seq_name> <seq_new_name>
     '''
+    # TODO check before process if target exist
     if len(args) == 0 or len(args) > 2 or args[0] == '-h':
         print call_gray2color.__doc__
         return 0
-    lname = WORLD.keys()
     src   = args[0]
-    if src not in lname:
-        outbox_exist(src)
-        return -1
+    if not check_name(src): return -1
     kind  = WORLD[src][0]
     if kind not in ['mat', 'seq']:
         outbox_error('Only mat or seq variable can be converted')
@@ -740,10 +700,7 @@ gray2color <seq_name> <seq_new_name>
             return -1
         if len(args) == 2:
             trg = args[1]
-            while trg in lname:
-                answer = inbox_overwrite(trg)
-                if answer == 'n': trg == inbox_input('Change to a new name:')
-                else: break
+            if not check_overwrite(trg): return -1
         else: trg = src
 
         mat = color_gray2color(WORLD[src][1])
@@ -755,10 +712,7 @@ gray2color <seq_name> <seq_new_name>
             return -1
         if len(args) == 2:
             trg = args[1]
-            while trg in lname:
-                answer = inbox_overwrite(trg)
-                if answer == 'n': trg == inbox_input('Change to a new name:')
-                else: break
+            if not check_overwrite(trg): return -1
         else: trg = src
 
         nb   = len(WORLD[src][1])
@@ -788,19 +742,15 @@ new mat name = <basename_mat> + index (format 000)
 % seq2mat test 2 res
 res002
     '''
+    # TODO check trg before process
     if len(args) != 3 or args[0] == '-h':
         print call_seq2mat.__doc__
         return 0
-    lname = WORLD.keys()
     src   = args[0]
     id    = args[1]
     trg   = args[2]
-    if src not in lname:
-        outbox_exist(src)
-        return -1
-    if WORLD[src][0] != 'seq':
-        outbox_error('Only seq variable can be converted')
-        return -1
+    if not check_name(src): return -1
+    if not check_seq(src):  return -1
     id   = id.split(':')
     size = len(WORLD[src][1])
     if len(id) == 1:
@@ -814,10 +764,7 @@ res002
             if id < 0 or id >= size:
                 outbox_error('Value is out of range [0, %i]' % size)
                 return -1
-            while trg in lname:
-                answer = inbox_overwrite(trg)
-                if answer == 'n': trg == inbox_input('Change to a new name')
-                else: break
+            if not check_overwrite(trg): return -1
             mat = WORLD[src][1][id]
             WORLD[trg] = ['mat', mat]
             return 1
@@ -853,15 +800,9 @@ seq_reg_ave im 10 10 35
     if len(args) != 4:
         print call_seq_reg_ave.__doc__
         return 0
-    lname = WORLD.keys()
     src   = args[0]
-    if src not in lname:
-        outbox_exist(src)
-        return -1
-    kind = WORLD[src][0]
-    if kind != 'seq':
-        outbox_error('Only seq variable can be used')
-        return -1
+    if not check_name(src): return -1
+    if not check_seq(src):  return -1
     dx = int(args[1])
     dy = int(args[2])
     ws = int(args[3])
@@ -883,6 +824,7 @@ def call_load_vid(args):
 Load video (avi file only) to a sequence
 load_vid <video_name> <frame_per_second>
     '''
+    # TODO check trg before process
     if len(args) != 2:
         print call_load_vid.__doc__
         return 0
@@ -896,11 +838,7 @@ load_vid <video_name> <frame_per_second>
     if ext != 'avi':
         outbox_error('Must be an avi file')
         return -1
-    lname = WORLD.keys()
-    while name in lname:
-        answer = inbox_overwrite(name)
-        if answer == 'n': name = inbox_input('Change to a new name:')
-        else: break
+    if not check_overwrite(name): return -1
     print 'Extract images...'
     pattern = '.tmp_astir_'
     try:
@@ -939,16 +877,9 @@ wiener <mat_source_name> <mat_res_name>
         return 0
     src   = args[0]
     trg   = args[1]
-    lname = WORLD.keys()
-    if src not in lname:
-        outbox_exist(src)
-        return -1
-    if trg in lname:
-        answer = inbox_overwrite(trg)
-        if answer == 'n': return 0
-    if WORLD[src][0] != 'mat':
-        outbox_error('Only mat variable can be used')
-        return -1
+    if not check_name(src):      return -1
+    if not check_mat(src):       return -1
+    if not check_overwrite(trg): return -1
     res = resto_wiener(WORLD[src][1])
     WORLD[trg] = ['mat', res]
 
@@ -1012,23 +943,17 @@ cut_seq vid1 :24 vid2   # keep 10 to last image
     if len(args) != 3:
         print call_cut_seq.__doc__
         return 0
-    
-    lname = WORLD.keys()
-    src   = args[0]
-    if src not in lname:
-        outbox_exist(src)
-        return -1
-    if WORLD[src][0] != 'seq':
-        outbox_error('Only seq variable can be used')
-        return -1
-    
+    src = args[0]
+    pos = args[1] 
+    trg = args[2]
+    if not check_name(src):      return -1
+    if not check_seq(src):       return -1
+    if not check_overwrite(trg): return  0
     data = WORLD[src][1]
     N    = len(data)
-    pos  = args[1]
     if len(pos) == 1:
         outbox_error('Wrong argument: %s' % pos)
         return -1
-
     if   pos[0]  == ':':
         start = 0
         stop  = int(pos.split(':')[-1])
@@ -1045,11 +970,6 @@ cut_seq vid1 :24 vid2   # keep 10 to last image
     if stop  >= N:
         stop  = N - 1
         outbox_bang('Stop number must be < %i' % N)
-
-    trg = args[2]
-    if trg in lname:
-        answer = inbox_overwrite(trg)
-        if answer == 'n': return 0
 
     seq = []
     for n in xrange(start, stop + 1):
@@ -1074,26 +994,16 @@ anaglyph im1 im2 res
     if len(args) != 3:
         print call_anaglyph.__doc__
         return 0
-
-    lname = WORLD.keys()
     src1  = args[0]
-    if src1 not in lname:
-        outbox_exist(src1)
-        return -1
     src2  = args[1]
-    if src2 not in lname:
-        outbox_exist(src2)
-        return -1
-    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
-        outbox_error('Only mat variable can be used')
-        return -1
+    trg = args[2]
+    if not check_name([src1, src2]): return -1
+    if not check_mat([src1, src2]):  return -1
+    if not check_overwrite(trg):     return 0
+    # TODO create a function for that
     if len(WORLD[src1][1]) != 3 or len(WORLD[src2][1]) != 3:
         outbox_error('Only RGB mat variable can be used')
         return -1
-    trg = args[2]
-    if trg in lname:
-        answer = inbox_overwrite(trg)
-        if answer == 'n': return 0
     res = image_anaglyph(WORLD[src1][1], WORLD[src2][1])
     WORLD[trg] = ['mat', res]
     
@@ -1111,22 +1021,18 @@ colormap im1 hot im_map
         print call_colormap.__doc__
         return 0
 
-    lname = WORLD.keys()
     src   = args[0]
-    if src not in lname:
-        outbox_exist(src)
-        return -1
     kind  = args[1]
+    trg   = args[2]
+    if not check_name(src):      return -1
+    if not check_mat(src):       return -1
+    if not check_overwrite(trg): return  0
     if kind not in ['jet', 'hsv', 'hot']:
         outbox_error('Kind of map color unknown')
         return -1
     if WORLD[src][0] != 'mat' or len(WORLD[src][1]) != 1:
         outbox_error('Only luminance mat varaible can be used')
         return -1
-    trg = args[2]
-    if trg in lname:
-        answer = inbox_overwrite(trg)
-        if answer == 'n': return 0
     res = color_colormap(WORLD[src][1], kind)
     WORLD[trg] = ['mat', res]
 
@@ -1144,22 +1050,12 @@ add im1 im2 res
         print call_add.__doc__
         return 0
 
-    lname = WORLD.keys()
     src1  = args[0]
-    if src1 not in lname:
-        outbox_exist(src1)
-        return -1
     src2  = args[1]
-    if src2 not in lname:
-        outbox_exist(src2)
-        return -1
-    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
-        outbox_error('Only mat variable can be used')
-        return -1
     trg   = args[2]
-    if trg in lname:
-        answer = inbox_overwrite(trg)
-        if answer == 'n': return 0
+    if not check_name([src1, src2]): return -1
+    if not check_mat([src1, src2]):  return -1
+    if not check_overwrite(trg):     return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
     res  = []
@@ -1182,22 +1078,12 @@ add im1 im2 res
         print call_sub.__doc__
         return 0
 
-    lname = WORLD.keys()
     src1  = args[0]
-    if src1 not in lname:
-        outbox_exist(src1)
-        return -1
     src2  = args[1]
-    if src2 not in lname:
-        outbox_exist(src2)
-        return -1
-    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
-        outbox_error('Only mat variable can be used')
-        return -1
     trg   = args[2]
-    if trg in lname:
-        answer = inbox_overwrite(trg)
-        if answer == 'n': return 0
+    if not check_name([src1, src2]): return -1
+    if not check_mat([src1, src2]):  return -1
+    if not check_overwrite(trg):     return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
     res  = []
@@ -1220,22 +1106,12 @@ add im1 im2 res
         print call_mul.__doc__
         return 0
 
-    lname = WORLD.keys()
     src1  = args[0]
-    if src1 not in lname:
-        outbox_exist(src1)
-        return -1
     src2  = args[1]
-    if src2 not in lname:
-        outbox_exist(src2)
-        return -1
-    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
-        outbox_error('Only mat variable can be used')
-        return -1
     trg   = args[2]
-    if trg in lname:
-        answer = inbox_overwrite(trg)
-        if answer == 'n': return 0
+    if not check_name([src1, src2]): return -1
+    if not check_mat([src1, src2]):  return -1
+    if not check_overwrite(trg):     return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
     res  = []
@@ -1257,23 +1133,12 @@ add im1 im2 res
     if len(args) != 3:
         print call_div.__doc__
         return 0
-
-    lname = WORLD.keys()
     src1  = args[0]
-    if src1 not in lname:
-        outbox_exist(src1)
-        return -1
     src2  = args[1]
-    if src2 not in lname:
-        outbox_exist(src2)
-        return -1
-    if WORLD[src1][0] != 'mat' or WORLD[src2][0] != 'mat':
-        outbox_error('Only mat variable can be used')
-        return -1
     trg   = args[2]
-    if trg in lname:
-        answer = inbox_overwrite(trg)
-        if answer == 'n': return 0
+    if not check_name([src1, src2]): return -1
+    if not check_mat([src1, src2]):  return -1
+    if not check_overwrite(trg):     return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
     res  = []
@@ -1294,14 +1159,9 @@ info im1
         print call_info.__doc__
         return 0
 
-    lname = WORLD.keys()
     src   = args[0]
-    if src not in lname:
-        outbox_exist(src)
-        return -1
-    if WORLD[src][0] != 'mat':
-        outbox_error('Only mat variable can be used')
-        return -1
+    if not check_name(src): return -1
+    if not check_mat(src):  return -1
 
     mat = WORLD[src][1]
     c1, c2, c3  = G, B, Y
