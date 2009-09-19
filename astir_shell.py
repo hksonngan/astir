@@ -132,6 +132,15 @@ def check_name(names):
             return -1
     return 1
 
+def check_name_file(names):
+    if not isinstance(names, list): names = [names]
+    lname = os.listdir('.')
+    for name in names:
+        if name not in lname:
+            outbox_exist(name)
+            return -1
+    return 1
+ 
 def check_overwrite(names):
     if not isinstance(names, list): names = [names]
     lname = WORLD.keys()
@@ -149,6 +158,15 @@ def check_overwrite(names):
     '''
 
     return 1
+
+def check_overwrite_file(names):
+    if not isinstance(names, list): names = [names]
+    lname = os.listdir('.')
+    for name in names:
+        while name in lname:
+            answer = inbox_overwrite(name)
+            if answer == 'n': return 0
+            else: break
 
 def check_seq(names):
     if not isinstance(names, list): names = [names]
@@ -338,7 +356,7 @@ Copie une variable
 def call_mem(args):
     '''
 Memories used in work space by the variables
-
+Mémoire utilisée dans les espaces de travails par les variables
     '''
     usage = 'mem'
     prog  = 'mem'
@@ -370,6 +388,7 @@ Memories used in work space by the variables
 def call_fun(args):
     '''
 Listing funtions available in Astir
+Liste les fonctions disponible dans Astir
     '''
     usage = 'fun'
     prog  = 'fun'
@@ -400,29 +419,31 @@ Listing funtions available in Astir
 
     return 1
 
-"""
 def call_save_var(args):
     '''
 Save Astir variable to file
-save_var <var_name> <file_name>
+Sauvegarde une variable Astir dans un fichier
     '''
+    usage = 'save_var <var_name> <file_name>\nsave_var im1 image1.pck'
+    prog  = 'save_var'
+    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) != 2:
-        print call_save_var.__doc__
+        p.print_help()
         return 0
-    name  = args[0]
-    fname = args[1]
-    if not check_name(name): return -1
-    lname = os.listdir('.')
-    if fname in lname:
-        answer = inbox_overwrite(fname)
-        if answer == 'n': return 0
+    name, fname = args
+    if not check_name_file(name):       return -1
+    if not check_overwrite_file(fname): return -1
     f = open(fname, 'w')
     local = ['var_astir', name, WORLD[name]]
-    cPickle.dump(local, f)
+    cPickle.dump(local, f, 1)
     f.close()
 
     return 1
 
+"""
 def call_save_world(args):
     '''
 Save the whole work space to a file
