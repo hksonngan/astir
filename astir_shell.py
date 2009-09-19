@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*- 
 #
 # This file is part of Astir
 # 
@@ -323,7 +324,7 @@ Copie une variable
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
-    if len(args) =! 2:
+    if len(args) != 2:
         p.print_help()
         return 0
     src, trg = args
