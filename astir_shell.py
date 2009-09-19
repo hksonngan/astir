@@ -36,7 +36,8 @@ from   pymir_kernel import space_reg_ave, space_merge, space_align, space_G_tran
 from   pymir_kernel import resto_wiener, image_anaglyph
 from   pymir_kernel import geo_homography
 from   math         import log, sqrt
-import os, sys, optparse
+from   optparse     import OptionParser
+import os, sys
 import readline # allow to back line in the shell
 import cPickle, atexit
 
@@ -59,6 +60,7 @@ N  = '\033[m'     # neutral
 Y  = '\033[0;33m' # yellow
 
 sizebar = 32
+version = 'v0.36'
 
 # WORLD structure: WORLD['keyname'] = [header, data]
 # header = 'seq' or 'mat'
@@ -132,9 +134,11 @@ def check_overwrite(names):
     if not isinstance(names, list): names = [names]
     lname = WORLD.keys()
     for name in names:
-        if name in lname:
+        while name in lname:
             answer = inbox_overwrite(name)
             if answer == 'n': return 0
+            else: break
+    
     '''
     while trg in lname:
         answer = inbox_overwrite(trg)
@@ -187,8 +191,11 @@ def call_ls(args):
 Listing all variables in work space
 ls
     '''
+    p = OptionParser(description=call_ls.__doc__, prog = 'ls', version = version)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) > 0:
-        print call_ls.__doc__
+        p.print_help()
         return 0
     lname = WORLD.keys()
     lname.sort()
@@ -196,33 +203,31 @@ ls
     print '%s %s %s' % ('name'.ljust(space), 'type'.ljust(space), 'size'.ljust(space))
     for name in lname:
         kind = WORLD[name][0]
-        if kind == 'var':
-            print '%s %s%s %s%s%s' % (name.ljust(space), 
-              G, 'var'.ljust(space), 
-              R, ('[%i]' % len(WORLD[name][1])).ljust(space), N)
-        elif kind == 'mat':
-            mode = len(WORLD[name][1])
-            h    = len(WORLD[name][1][0])
-            w    = len(WORLD[name][1][0][0])
-            if   mode == 1: mode = 'L'
-            elif mode == 3: mode = 'RGB'
-            else:           mode = 'RGBA'
+        if kind == 'mat':
+            dim  = WORLD[name][1].shape
+            h, w = dim[:2]
+            if len(dim) == 3:
+                if   dim[2] == 3: mode = 'RGB'
+                elif dim[2] == 4: mode = 'RGBA'
+            else:                 mode = 'L'
             print '%s %s%s %s%s%s' % (name.ljust(space), 
               G, 'mat'.ljust(space), 
               R, '[%ix%i %s]' % (w, h, mode), N)
         elif kind == 'seq':
-            nbm  = len(WORLD[name][1])
-            mode = len(WORLD[name][1][0])
-            h    = len(WORLD[name][1][0][0])
-            w    = len(WORLD[name][1][0][0][0])
-            if   mode == 1: mode = 'L'
-            elif mode == 3: mode = 'RGB'
-            else:           mode = 'RGBA'
+            dim  = WORLD[name][1].shape
+            nbm  = dim[0]
+            h, w = dim[1:3]
+            if len(dim) == 4:
+                if   dim[3] == 3: mode = 'RGB'
+                elif dim[3] == 4: mode = 'RGBA'
+            else:                 mode = 'L'
             print '%s %s%s %s%s%s' % (name.ljust(space), 
               G, 'seq'.ljust(space), 
               R, '[%i mat %ix%i %s]' % (nbm, w, h, mode), N)
     return 1
 
+
+"""
 def call_ldir(args):
     '''
 Listing the current directory
@@ -1245,7 +1250,7 @@ print '# info'
 print call_info.__doc__
 sys.exit()
 '''
-
+"""
 #=== shell io ===================
 
 # script kernel
@@ -1315,3 +1320,4 @@ while 1 and not script_end:
 
     # caller
     eval('call_%s(args)' % progname)
+
