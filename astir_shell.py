@@ -208,26 +208,29 @@ Liste toutes les variables dans l\'espace de travail
     for name in lname:
         kind = WORLD[name][0]
         if kind == 'mat':
-            dim  = WORLD[name][1].shape
-            h, w = dim[:2]
+            dim   = WORLD[name][1].shape
+            dtype = WORLD[name][1].dtype
+            h, w  = dim[:2]
             if len(dim) == 3:
                 if   dim[2] == 3: mode = 'RGB'
                 elif dim[2] == 4: mode = 'RGBA'
             else:                 mode = 'L'
             print '%s %s%s %s%s%s' % (name.ljust(space), 
               G, 'mat'.ljust(space), 
-              R, '[%ix%i %s]' % (w, h, mode), N)
+              R, '[%ix%i %s %s]' % (w, h, mode, dtype), N)
         elif kind == 'seq':
-            dim  = WORLD[name][1].shape
-            nbm  = dim[0]
-            h, w = dim[1:3]
+            dim   = WORLD[name][1].shape
+            dtype = WORLD[name][1].dtype
+            nbm   = dim[0]
+            h, w  = dim[1:3]
             if len(dim) == 4:
                 if   dim[3] == 3: mode = 'RGB'
                 elif dim[3] == 4: mode = 'RGBA'
             else:                 mode = 'L'
             print '%s %s%s %s%s%s' % (name.ljust(space), 
               G, 'seq'.ljust(space), 
-              R, '[%i mat %ix%i %s]' % (nbm, w, h, mode), N)
+              R, '[%i mat %ix%i %s %s]' % (nbm, w, h, mode, dtype), N)
+
     return 1
 
 def call_ldir(args):
@@ -330,42 +333,40 @@ Copie une variable
     del data
 
     return 1
-"""
+
 def call_mem(args):
     '''
 Memories used in work space by the variables
-mem
+
     '''
+    usage = 'mem'
+    prog  = 'mem'
+    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) > 0:
-        print call_mem.__doc__
+        p.print_help()
         return 0
     space = 10
     txt = ['', 'k', 'M', 'G', 'T']
+    nbb = {'float8':1, 'float16':2, 'float32':4, 'float64':8,
+            'uint8':1,  'uint16':2,  'uint32':4,  'uint64':8}
     lname = WORLD.keys()
     for name in lname:
-        kind = WORLD[name][0]
-        if   kind == 'var':
-            size  = len(WORLD[name][1]) * 8
-        elif kind == 'mat':
-            mode = len(WORLD[name][1])
-            h    = len(WORLD[name][1][0])
-            w    = len(WORLD[name][1][0][0])
-            size = mode * w * h * 4
-        elif kind == 'seq':
-            nbm  = len(WORLD[name][1])
-            mode = len(WORLD[name][1][0])
-            h    = len(WORLD[name][1][0][0])
-            w    = len(WORLD[name][1][0][0][0])
-            size = mode * w * h * nbm * 4
-        ie    = int(log(size) // log(1e3))
-        size /= (1e3 ** ie)
-        size  = '%5.2f %sB' % (size, txt[ie])
+        size   = WORLD[name][1].size
+        dtype  = WORLD[name][1].dtype
+        size  *= nbb[dtype]
+        ie     = int(log(size) // log(1e3))
+        size  /= (1e3 ** ie)
+        size   = '%5.2f %sB' % (size, txt[ie])
         print '%s %s%s %s%s%s' % (name.ljust(space), 
               G, kind.ljust(space), 
               R, size.ljust(space), N)
         
     return 1
 
+"""
 def call_fun(args):
     '''
 Listing funtions available in Astir
