@@ -481,8 +481,8 @@ Sauvegarde entierement l espace de travail dans un fichier
 
 def call_load_var(args):
     '''
-Load variables from a file to work space.
-Charge des variables depuis un fichier dans l espace de travail.
+Load a variable from a file to work space.
+Charge une variable depuis un fichier dans l espace de travail.
     '''
     usage = 'load_var <file_name>\nload_var mydata.pck'
     prog  = 'load_var'
@@ -517,20 +517,23 @@ Charge des variables depuis un fichier dans l espace de travail.
 
     return 1
 
-"""
 def call_load_world(args):
     '''
-Load a work space from a file
-load_world <file_name>    
+Load a work space from a file.
+Charge un espace de travial depuis un fichier.
     '''
-    if len(args) == 0 or len(args) > 1 or args[0] == '-h':
-        print call_load_world.__doc__
+    usage = 'load_world <file_name>\nload_world mydata.pck'
+    prog  = 'load_world'
+    desc  = call_load_world.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 1:
+        p.print_help()
         return 0
     fname = args[0]
-    lname = os.listdir('.')
-    if fname not in lname:
-        outbox_exist(fname)
-        return -1
+    if not check_name_file(fname): return -1
     f = open(fname, 'r')
     try: local = cPickle.load(f)
     except:
@@ -547,7 +550,7 @@ load_world <file_name>
     WORLD = local[1]
 
     return 1
-
+"""
 def call_load_im(args):
     '''
 Load images from files
