@@ -226,44 +226,47 @@ ls
               R, '[%i mat %ix%i %s]' % (nbm, w, h, mode), N)
     return 1
 
-
-"""
 def call_ldir(args):
     '''
 Listing the current directory
 ldir
     '''
+    p = OptionParser(description=call_ls.__doc__, prog = 'ldir', version = version)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) > 0:
-        print call_ldir.__doc__
+        p.print_help()
         return 0
-
     os.system('ls')
     return 1
 
 def call_rm(args):
     '''
 Remove variables in work space
-rm all
+rm *
 rm <name>
 rm <name1> <name2> ...
 rm <na*>
     '''
-    if len(args) == 0 or args[0] == '-h':
-        print call_rm.__doc__
+    p = OptionParser(description=call_ls.__doc__, prog = 'rm', version = version)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) == 0:
+        p.print_help()
         return 0
-    if   args[0] == 'all': args = WORLD.keys()
+    if   args[0] == '*': args = WORLD.keys()
     elif args[0].find('*') != -1:
         lname   = WORLD.keys()
         pattern = args[0].split('*')
         if len(pattern) != 2:
-            outbox_error('Bad pattern')
+            outbox_error('Bad pattern with the joker *')
             return -1
         args = []
         for name in lname:
             if name.find(pattern[0]) != -1 and name.find(pattern[1]) != -1:
                 args.append(name)
         if len(args) == 0:
-            outbox_error('No variable matchs with the pattern')
+            outbox_error('No variable matchs with the pattern *')
             return -1
         args.sort()
         outbox_bang('%i variables match with the pattern' % len(args))
@@ -271,12 +274,11 @@ rm <na*>
         answer = inbox_question('Agree to remove all of them')
         if answer == 'n': return 0
 
-    for name in args:
-        try: del WORLD[name]
-        except KeyError: outbox_exist(args[0])
+    if not check_name(args): return -1
+    for name in args: del WORLD[name]
 
     return 1
-
+"""
 def call_mv(args):
     '''
 Move/rename variables
