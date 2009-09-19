@@ -754,64 +754,57 @@ Convertie mat/seq en couleur (RGB ou RGBA) en niveau de gris (Luminance).
         del data, nim, im0, bar
 
     return 1
-"""
+
 def call_gray2color(args):
     '''
-Convert mat gray sclae (Luminance) to color (RGB)
-Convert in-place
-gray2color <mat_name>
-Convert to new mat
-gray2color <mat_name> <mat_new_name>
-Convert a mat sequence in-place
-gray2color <seq_name>
-Convert a mat sequence to a new one
-gray2color <seq_name> <seq_new_name>
+Convert mat/seq gray scale (Luminance) to color (RGB).
+Converti mat/seq en niveau de gris (Luminance) en couleur (RGB).
     '''
-    # TODO check before process if target exist
-    if len(args) == 0 or len(args) > 2 or args[0] == '-h':
-        print call_gray2color.__doc__
+
+    usage = 'Convert in-place\n\
+             gray2color <mat_name>\n\
+             Convert to new mat\n\
+             gray2color <mat_name> <mat_new_name>\n\
+             Convert a mat sequence in-place\n\
+             gray2color <seq_name>\n\
+             Convert a mat sequence to a new one\n\
+             gray2color <seq_name> <seq_new_name>\n'
+    prog  = 'gray2color'
+    desc  = call_gray2color.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) == 0 or len(args) > 2:
+        p.print_help()
         return 0
-    src   = args[0]
-    if not check_name(src): return -1
-    kind  = WORLD[src][0]
-    if kind not in ['mat', 'seq']:
-        outbox_error('Only mat or seq variable can be converted')
-        return -1
-    if kind == 'mat':
-        if len(WORLD[src][1]) != 1:
-            outbox_error('Already in color')
-            return -1
-        if len(args) == 2:
-            trg = args[1]
-            if not check_overwrite(trg): return -1
-        else: trg = src
-
-        mat = color_gray2color(WORLD[src][1])
-        WORLD[trg] = ['mat', mat]
-
+    if len(args) == 2:
+        src, trg = args
     else:
-        if len(WORLD[src][1][0]) != 1:
-            outbox_error('Already in color')
-            return -1
-        if len(args) == 2:
-            trg = args[1]
-            if not check_overwrite(trg): return -1
-        else: trg = src
-
-        nb   = len(WORLD[src][1])
+        src, trg = args[0], args[0]
+    if not check_name(src): return -1
+    if kind == 'mat':
+        im  = WORLD[src][1]
+        if not check_L(im): return -1
+        nim = color_gray2color(im)
+        WORLD[trg] = ['mat', nim]
+        del nim, im
+    else:
+        im0 = WORLD[src][1][0]
+        if not check_L(im0): return -1
+        nb  = WORLD[src][1].shape[0]
         bar  = progress_bar(nb, sizebar, 'Processing')
         data = []
         for n in xrange(nb):
-            mat  = color_gray2color(WORLD[src][1][n])
-            data.append(mat)
+            nim = color_gray2color(WORLD[src][1][n])
+            data.append(nim)
             bar.update(n)
+        data = array(data)
         WORLD[trg] = ['seq', data]
-        del data
-
-    del mat
+        del data, nim, im0, bar
 
     return 1
-
+"""
 def call_seq2mat(args):
     '''
 Extract mat variables from a sequence
