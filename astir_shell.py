@@ -366,18 +366,23 @@ Memories used in work space by the variables
         
     return 1
 
-"""
 def call_fun(args):
     '''
 Listing funtions available in Astir
-fun
     '''
+    usage = 'fun'
+    prog  = 'fun'
+    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    p.set_usage(usage)
+    p.add_option('-c', action='store', type='int', default='4', help='Number of columns. Nombre de colonnes')
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) > 0:
-        print call_fun.__doc__
+        p.print_help()
         return 0
     listfun.sort()
     sfun = len(listfun)
-    nc   = 4  # cst 4 columns
+    nc   = opt.c
     if sfun % nc == 0: nl = sfun // nc
     else:              nl = (sfun // nc) + 1
     smax = 0
@@ -394,6 +399,7 @@ fun
 
     return 1
 
+"""
 def call_save_var(args):
     '''
 Save Astir variable to file
