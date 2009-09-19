@@ -665,32 +665,37 @@ save_im <mat_name> <file_name.[bmp, jpg, png]>
         del im, bar, nb, names
 
     return 1
-"""
+
 def call_show_mat(args):
     '''
-Display a mat variable as an image
-show_mat <mat_name>
-show_mat <mat1_name> <mat2_name> ...
+Display a mat variable as an image.
+Affiche une variable de type mat comme une image.
     '''
-    #Display a grid on the image
-    #show_mat <mat_name> g[size_inter_grid_in_pixel]
-
-    if len(args) == 0 or args[0] == '-h':
-        print call_show_mat.__doc__
+    usage = 'show_mat <mat_name>\nshow_mat <mat_name1> <mat_name2>'
+    prog  = 'show_mat'
+    desc  = call_show_mat.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) < 0 or len(args) > 2:
+        p.print_help()
         return 0
+ 
     list_im = []
     if not check_name(args): return -1
     if not check_mat(args):  return -1    
     for name in args:
-        mat = WORLD[name][1]
-        im  = image_mat2im(mat)
+        im = WORLD[name][1]
         list_im.append(im)
 
     image_show(list_im)
-    del list_im, args
+    del list_im, args, im
 
     return 1
 
+
+"""
 def call_color2gray(args):
     '''
 Convert mat color (RGB or RGBA) to gray scale (Luminance)
