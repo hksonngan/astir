@@ -550,23 +550,28 @@ Charge un espace de travial depuis un fichier.
     WORLD = local[1]
 
     return 1
-"""
+
 def call_load_im(args):
     '''
-Load images from files
-Only one image
-load_im <file_name.[bmp, jpg, png]>
-Several images as a sequence
-load_im <file_na*.png>
+Load images from files.
+Chared des images depuis des fichiers.
     '''
-    if len(args) == 0 or len(args) > 1 or args[0] == '-h':
-        print call_load_im.__doc__
+    usage = 'load_im <file_name.[bmp, jpg, png, tiff]>\nload_im file_na*.png'
+    prog  = 'load_im'
+    desc  = call_ls.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) == 0:
+        p.print_help()
         return 0
+
     if args[0].find('*') != -1:
         lname   = os.listdir('.')
         pattern = args[0].split('*')
         if len(pattern) != 2:
-            outbox_error('Bad pattern')
+            outbox_error('Bad pattern with joker *')
             return -1
         mem = []
         for name in lname:
@@ -588,24 +593,15 @@ load_im <file_na*.png>
     buf = fname.split('.')
     if len(buf) == 2: name, ext = fname.split('.')
     else:             name, ext = None, None
-    if ext not in ['bmp', 'jpg', 'png']:
-        outbox_error('Bad extension (bmp, jpg or png)')
+    if ext not in ['bmp', 'jpg', 'png', 'tiff']:
+        outbox_error('Bad extension (bmp, jpg, png or tiff)')
         return -1
-    lname = os.listdir('.')
-    if fname not in lname:
-        outbox_exist(fname)
-        return -1
-    lname = WORLD.keys()
-    while name in lname:
-        answer = inbox_overwrite(name)
-        if answer == 'n': name = inbox_input('Change to a new name:')
-        else: break
+    if not check_name_file(fname): return -1
+    if not check_overwrite(name):  return  0
     if mem is None:
         im  = image_read(fname)
-        mat = image_im2mat(im)
+        WORLD[name] = ['mat', im]
         del im
-        WORLD[name] = ['mat', mat]
-        del mat
     else:
         bar  = progress_bar(len(mem), sizebar, 'loading')
         seq  = []
@@ -613,16 +609,16 @@ load_im <file_na*.png>
         i    = 0
         for item in mem:
             im  = image_read(item)
-            mat = image_im2mat(im)
-            seq.append(mat)
+            seq.append(im)
             bar.update(i)
             i += 1
-        del im, mat
+        del im
+        seq = array(seq)
         WORLD[name] = ['seq', seq]
         del seq
 
     return 1
-
+"""
 def call_save_im(args):
     '''
 Save image from a variable to a file
