@@ -37,6 +37,7 @@ from   pymir_kernel import resto_wiener, image_anaglyph
 from   pymir_kernel import geo_homography
 from   math         import log, sqrt
 from   optparse     import OptionParser
+from   copy         import deepcopy
 import os, sys
 import readline # allow to back line in the shell
 import cPickle, atexit
@@ -189,9 +190,11 @@ class progress_bar:
 def call_ls(args):
     '''
 Listing all variables in work space
-ls
+Liste toutes les variables dans l\'espace de travail
     '''
+    usage = 'ls'
     p = OptionParser(description=call_ls.__doc__, prog = 'ls', version = version)
+    p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
     if len(args) > 0:
@@ -228,10 +231,12 @@ ls
 
 def call_ldir(args):
     '''
-Listing the current directory
-ldir
+Listing of the current directory
+Liste du dossier courant
     '''
+    usage = 'ldir'
     p = OptionParser(description=call_ls.__doc__, prog = 'ldir', version = version)
+    p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
     if len(args) > 0:
@@ -243,12 +248,11 @@ ldir
 def call_rm(args):
     '''
 Remove variables in work space
-rm *
-rm <name>
-rm <name1> <name2> ...
-rm <na*>
+Efface des variables dans l\'espace de travail
     '''
+    usage = 'rm <name>\nrm <name1> <name2>\nrm <na*>\nrm <*>'
     p = OptionParser(description=call_ls.__doc__, prog = 'rm', version = version)
+    p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
     if len(args) == 0:
@@ -278,26 +282,29 @@ rm <na*>
     for name in args: del WORLD[name]
 
     return 1
-"""
+
 def call_mv(args):
     '''
-Move/rename variables
-mv <source_name> <target_name>
+Move/rename variable
+Déplace/renomme une variable
     '''
-    if len(args) != 2 or args[0] == '-h':
-        print call_mv.__doc__
+    usage = 'mv <source_name> <target_name>\nmv im0 im1'
+    p = OptionParser(description=call_ls.__doc__, prog = 'mv', version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 2:
+        p.print_help()
         return 0
-    src = args[0]
-    trg = args[1]
+    src, trg = args
     if not check_name(src):      return -1
-    if not check_overwrite(trg): return 0
-    data = WORLD[src]
-    WORLD[trg] = data
+    if not check_overwrite(trg): return  0
+    WORLD[trg] = deepcopy(WORLD[src])
     del WORLD[src]
     del data
 
     return 1
-
+"""
 def call_cp(args):
     '''
 Copy variable
