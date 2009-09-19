@@ -186,6 +186,20 @@ def check_mat(names):
             return -1
     return 1
 
+def check_RGB(im):
+    n = im.shape
+    if len(n) == 3:
+        if n[2] >= 3:
+            return 1
+    outbox_error('Must be in RGB format')
+    return -1
+
+def check_L(im):
+    n = im.shape
+    if len(n) == 2: return 1
+    outbox_error('Must be in L format')
+    return -1
+
 class progress_bar:
     def __init__(self, valmax, maxbar, title):
         if valmax == 0:  valmax = 1
@@ -678,7 +692,7 @@ Affiche une variable de type mat comme une image.
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
-    if len(args) < 0 or len(args) > 2:
+    if len(args) == 0 or len(args) > 2:
         p.print_help()
         return 0
  
@@ -694,68 +708,53 @@ Affiche une variable de type mat comme une image.
 
     return 1
 
-
-"""
 def call_color2gray(args):
     '''
-Convert mat color (RGB or RGBA) to gray scale (Luminance)
-Convert in-place
-color2gray <mat_name>
-Convert to new mat
-color2gray <mat_name> <mat_new_name>
-Convert a mat sequence in-place
-color2gray <seq_name>
-Convert a mat sequence to a new one
-color2gray <seq_name> <seq_new_name>
+Convert mat/seq color (RGB or RGBA) to gray scale (Luminance).
+Convertie mat/seq en couleur (RGB ou RGBA) en niveau de gris (Luminance).
     '''
-    # TODO check vefore process if trg exist
-    if len(args) == 0 or len(args) > 2 or args[0] == '-h':
-        print call_color2gray.__doc__
+    usage = 'Convert in place\ncolor2gray <mat_name>\nConvert to new mat\n\
+             color2gray <mat_name> <mat_new_name>\nConvert a mat sequence in-place\n\
+             color2gray <seq_name>\nConvert a mat sequence to a new one\n\
+             color2gray <seq_name> <seq_new_name>'
+    prog  = 'color2gray'
+    desc  = call_save_im.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) == 0 or len(args) > 2:
+        p.print_help()
         return 0
-    src   = args[0]
+ 
+    if len(args) == 2:
+        src, trg = args
+    else:
+        src, trg = args[0], args[0]
     if not check_name(src): return -1
     kind  = WORLD[src][0]
-    if kind not in ['mat', 'seq']:
-        outbox_error('Only mat or seq variable can be converted')
-        return -1
     if kind == 'mat':
-        if len(WORLD[src][1]) == 1:
-            outbox_error('Already in gray scale')
-            return -1
-        if len(args) == 2:
-            trg = args[1]
-            while trg in lname:
-                answer = inbox_overwrite(trg)
-                if answer == 'n': trg == inbox_input('Change to a new name:')
-                else: break
-        else: trg = src
-
-        mat = color_color2gray(WORLD[src][1])
-        WORLD[trg] = ['mat', mat]
-
+        im = WORLD[src][1]
+        if not check_L(im): return -1
+        nim = color_color2gray(im)
+        WORLD[trg] = ['mat', nim]
+        del nim, im
     else:
-        if len(WORLD[src][1][0]) == 1:
-            outbox_error('Already in gray scale')
-            return -1
-        if len(args) == 2:
-            trg = args[1]
-            if not check_overwrite(trg): return -1
-        else: trg = src
-
-        nb   = len(WORLD[src][1])
+        im0  = WORLD[src][1][0]
+        if not check_L(im0): return -1
+        nb   = WORLD[src][1].shape[0]
         bar  = progress_bar(nb, sizebar, 'Processing')
         data = []
         for n in xrange(nb):
-            mat  = color_color2gray(WORLD[src][1][n])
-            data.append(mat)
+            nim = color_color2gray(WORLD[src][1][n])
+            data.append(nim)
             bar.update(n)
+        data = array(data)
         WORLD[trg] = ['seq', data]
-        del data
-
-    del mat, im
+        del data, nim, im0, bar
 
     return 1
-
+"""
 def call_gray2color(args):
     '''
 Convert mat gray sclae (Luminance) to color (RGB)
