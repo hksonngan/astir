@@ -208,12 +208,13 @@ class progress_bar:
 #=== cmd functions =============
 def call_ls(args):
     '''
-Listing all variables in work space
-Liste toutes les variables dans l\'espace de travail
+Listing all variables in work space.
+Liste toutes les variables dans l espace de travail
     '''
     usage = 'ls'
     prog  = 'ls'
-    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    desc  = call_ls.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -254,12 +255,13 @@ Liste toutes les variables dans l\'espace de travail
 
 def call_ldir(args):
     '''
-Listing of the current directory
+Listing of the current directory.
 Liste du dossier courant
     '''
     usage = 'ldir'
     prog  = 'ldir'
-    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    desc  = call_ldir.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -271,12 +273,13 @@ Liste du dossier courant
 
 def call_rm(args):
     '''
-Remove variables in work space
-Efface des variables dans l\'espace de travail
+Remove variables in work space.
+Efface des variables dans l espace de travail
     '''
     usage = 'rm <name>\nrm <name1> <name2>\nrm <na*>\nrm <*>'
     prog  = 'rm'
-    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    desc  = call_rm.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -310,12 +313,13 @@ Efface des variables dans l\'espace de travail
 
 def call_mv(args):
     '''
-Move/rename variable
-Déplace/renomme une variable
+Move/rename variable.
+Deplace/renomme une variable
     '''
     usage = 'mv <source_name> <target_name>\nmv im0 im1'
     prog  = 'mv'
-    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    desc  = call_ls.__doc__
+    p = OptionParser(description = desc, prog=prog, version=version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -338,7 +342,8 @@ Copie une variable
     '''
     usage = 'cp <source_name> <target_name>\ncp im0 im1'
     prog  = 'cp'
-    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    desc  = call_cp.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -356,11 +361,12 @@ Copie une variable
 def call_mem(args):
     '''
 Memories used in work space by the variables
-Mémoire utilisée dans les espaces de travails par les variables
+Mémoire utilisee dans les espaces de travails par les variables
     '''
     usage = 'mem'
     prog  = 'mem'
-    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    desc  = call_mem.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -392,7 +398,8 @@ Liste les fonctions disponible dans Astir
     '''
     usage = 'fun'
     prog  = 'fun'
-    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    desc  = call_fun.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
     p.set_usage(usage)
     p.add_option('-c', action='store', type='int', default='4', help='Number of columns. Nombre de colonnes')
     try: opt, args = p.parse_args(args)
@@ -421,12 +428,13 @@ Liste les fonctions disponible dans Astir
 
 def call_save_var(args):
     '''
-Save Astir variable to file
+Save Astir variable to file.
 Sauvegarde une variable Astir dans un fichier
     '''
     usage = 'save_var <var_name> <file_name>\nsave_var im1 image1.pck'
     prog  = 'save_var'
-    p = OptionParser(description=call_ls.__doc__, prog = prog, version = version)
+    desc  = call_save_var.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
     p.set_usage(usage)
     try: opt, args = p.parse_args(args)
     except: return 0
@@ -443,30 +451,35 @@ Sauvegarde une variable Astir dans un fichier
 
     return 1
 
-"""
 def call_save_world(args):
     '''
-Save the whole work space to a file
-save_world <file_name>
+Save the whole work space to a file.
+Sauvegarde entierement l espace de travail dans un fichier
     '''
-    if len(args) == 0 or len(args) > 1 or args[0] == '-h':
-        print call_save_world.__doc__
+    usage = 'save_world <file_name>\nsave_world backup.pck'
+    prog  = 'save_world'
+    desc  = call_save_world.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 1:
+        p.print_help()
+        return 0
     kname = WORLD.keys()
     if len(kname) == 0:
         outbox_bang('Nothing to save')
         return 0
     fname = args[0]
-    lname = os.listdir('.')
-    if fname in lname:
-        answer = inbox_overwrite(fname)
-        if answer == 'n': return 0
+    if not check_overwrite_file(fname): return -1
     f = open(fname, 'w')
     local = ['world_astir', WORLD]
-    cPickle.dump(local, f)
+    cPickle.dump(local, f, 1)
     f.close()
     
     return 1
 
+"""
 def call_load_var(args):
     '''
 Load variable fron file to work space
