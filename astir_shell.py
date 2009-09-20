@@ -760,7 +760,6 @@ def call_gray2color(args):
 Convert mat/seq gray scale (Luminance) to color (RGB).
 Converti mat/seq en niveau de gris (Luminance) en couleur (RGB).
     '''
-
     usage = 'Convert in-place\n\
              gray2color <mat_name>\n\
              Convert to new mat\n\
@@ -804,62 +803,54 @@ Converti mat/seq en niveau de gris (Luminance) en couleur (RGB).
         del data, nim, im0, bar
 
     return 1
-"""
+
 def call_seq2mat(args):
     '''
-Extract mat variables from a sequence
-Only one
-seq2mat <seq_name> 5 <basename_mat>
-Or several mat, in this case 3 mats
-seq2mat <seq_name> 2:4 <basename_mat>
-Or all mat store in the sequence
-seq2mat <seq_name> all <basename_mat>
-new mat name = <basename_mat> + index (format 000)
-% seq2mat test 2 res
-res002
+Extract mat variables from a sequence.
+Extrait mar variables depuis une sequence.
     '''
-    # TODO check trg before process
-    if len(args) != 3 or args[0] == '-h':
-        print call_seq2mat.__doc__
+    usage = 'seq2mat <seq_name> <mat_name> [options]\n\
+             Extract number 5\n\
+             seq2mat vid im -i 5\n\
+             Extract mat 5 to 10\n\
+             seq2mat vid im -s 5 -e 10\n\
+             Extract mat 5 through to the end\n\
+             seq2mat vid im -s 5\n\
+             Extract first mat through to the 10th (include)\n\
+             seq2mat vid im -e 10\n'
+    prog  = 'seq2mat' 
+    desc  = call_seq2mat.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.add_option('-i', action='store', type='int', default='-1', help='Extract mat i')
+    p.add_option('-s', action='store', type='int', default='-1', help='Extract starting number')
+    p.add_option('-e', action='store', type='int', default='-1', help='Extract stoping number')
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 2:
+        p.print_help()
         return 0
-    src   = args[0]
-    id    = args[1]
-    trg   = args[2]
+    if opt.i != -1 and (opt.s  != -1 or opt.e != -1):
+        outbox_error('Choose option i OR e and s, not both')
+        return -1
+    if opt.i == -1 and opt.s == -1 and opt.e == -1: opt.i = 0
+    src, trg = args
     if not check_name(src): return -1
     if not check_seq(src):  return -1
-    id   = id.split(':')
-    size = len(WORLD[src][1])
-    if len(id) == 1:
-        if id[0] == 'all':
-            id = range(size)
-        else:
-            try: id = int(id[0])
-            except:
-                outbox_error('Range value incorrect')
-                return -1
-            if id < 0 or id >= size:
-                outbox_error('Value is out of range [0, %i]' % size)
-                return -1
-            if not check_overwrite(trg): return -1
-            mat = WORLD[src][1][id]
-            WORLD[trg] = ['mat', mat]
-            return 1
+    if opt.i != -1: opt.s = opt.e = opti
     else:
-        try: start, stop = int(id[0]), int(id[1])
-        except:
-            outbox_error('Range value incorrect')
-            return -1
-        if start < 0 or stop >= size:
-            outbox_error('Values are out of range [0, %i]' % size)
-            return -1
-        id = range(start, stop + 1)
-
-    for i in id:
-        mat = WORLD[src][1][i]
-        WORLD[trg + '%03i' % i] = ['mat', mat]
+        if opt.s == -1: opt.s = 0
+        if opt.e == -1: opt.e = WORLD[src][1].shape[0]
+    names = [trg + '_%04i' % i for i in xrange(opt.s, opt.e + 1)]
+    if not check_overwrite(names): return -1
+    n = 0
+    for i in xrange(opt.s, opt.e + 1):
+        im = WORLD[src][1][i]
+        WORLD[name[n]] = ['mat', im]
+        n += 1
 
     return 1
-
+"""
 def call_seq_reg_ave(args):
     '''
 This function use a simple registration to match images together
