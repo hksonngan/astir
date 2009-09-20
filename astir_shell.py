@@ -777,10 +777,8 @@ Converti mat/seq en niveau de gris (Luminance) en couleur (RGB).
     if len(args) == 0 or len(args) > 2:
         p.print_help()
         return 0
-    if len(args) == 2:
-        src, trg = args
-    else:
-        src, trg = args[0], args[0]
+    if len(args) == 2: src, trg = args
+    else:              src, trg = args[0], args[0]
     if not check_name(src): return -1
     if kind == 'mat':
         im  = WORLD[src][1]
@@ -850,11 +848,13 @@ Extrait mar variables depuis une sequence.
         n += 1
 
     return 1
-"""
+
 def call_seq_reg_ave(args):
     '''
 This function use a simple registration to match images together
-and compute the averages. The sequence of matrices must be in gray scale.
+and compute the averages. Which will increase the signal-noise ratio.
+Cette fonction permet de recaller les images entre elles
+afin de calculer la moyenne. Qui vat augment le rapport signal sur bruit.
 
 seq_reg_ave <seq_name> <dx> <dy> <ws>
 
@@ -864,28 +864,41 @@ ws: window size used to track translation between images (must be odd)
 
 seq_reg_ave im 10 10 35
     '''
-    if len(args) != 4:
-        print call_seq_reg_ave.__doc__
+    usage = 'seq_reg_ave <seq_name> [option]\n\
+             seq_reg_ave im\n\
+             seq_reg_ave im -d 10 -w 35 -o res'
+    prog  = 'seq_reg_ave'
+    desc  = call_seq_reg_ave.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    p.add_option('-d', action='store', type='int',    default='10',      help='dx/dy is the translation range search on x/y (x-dx to x+dx) (default 10)')
+    p.add_option('-w', action='store', type='int',    default='35',      help='window size used to track translation between images (must be odd) (default 35)')
+    p.add_option('-o', action='store', type='string', default='res_ave', help='output name (default res_ave)')
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 1:
+        p.print_help()
         return 0
     src   = args[0]
-    if not check_name(src): return -1
-    if not check_seq(src):  return -1
-    dx = int(args[1])
-    dy = int(args[2])
-    ws = int(args[3])
+    if not check_name(src):        return -1
+    if not check_seq(src):         return -1
+    if not check_overwrite(opt.o): return 0
+    dx = dy = p.d
+    ws = p.w
     if ws % 2 == 0:
         ws += 1
         outbox_bang('Window size must be odd, set to %i' % ws)
-    mat = WORLD[src][1][0]
-    im  = image_mat2im(mat)
-    im  = color_gray2color(im)
-    dw  = (ws - 1) // 2
+    dw = (ws - 1) // 2
+    im = WORLD[src][1][0]
+    # TODO change this part with new kernel
     p   = image_show_get_pts(im, 1, rad = dw)
     print 'point selected:', p[0]
     ave = space_reg_ave(WORLD[src][1], p[0], ws, dx, dy)
-    WORLD['ave_' + src] = ['mat', ave]
+    WORLD[opt.o] = ['mat', ave]
+
     return 1
 
+"""
 def call_load_vid(args):
     '''
 Load video (avi file only) to a sequence
