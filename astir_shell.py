@@ -854,15 +854,7 @@ def call_seq_reg_ave(args):
 This function use a simple registration to match images together
 and compute the averages. Which will increase the signal-noise ratio.
 Cette fonction permet de recaller les images entre elles
-afin de calculer la moyenne. Qui vat augment le rapport signal sur bruit.
-
-seq_reg_ave <seq_name> <dx> <dy> <ws>
-
-dx: is the translation range search on x (x-dx to x+dx)
-dy: is the translation range search on y (y-dy to y+dy)
-ws: window size used to track translation between images (must be odd)
-
-seq_reg_ave im 10 10 35
+afin de calculer la moyenne. Qui vat augmenter le rapport signal sur bruit.
     '''
     usage = 'seq_reg_ave <seq_name> [option]\n\
              seq_reg_ave im\n\
@@ -898,27 +890,32 @@ seq_reg_ave im 10 10 35
 
     return 1
 
-"""
 def call_load_vid(args):
     '''
-Load video (avi file only) to a sequence
+Load video (avi file only) as a sequence
+Charge une video (fichier avi) en tant qu une sequence
 load_vid <video_name> <frame_per_second>
     '''
-    # TODO check trg before process
-    if len(args) != 2:
-        print call_load_vid.__doc__
+    usage = 'load_vid <video_name> [option]\n\loav_vid neptune.avi -f 10'
+    prog  = 'load_vid'
+    desc  = call_load_vid.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    p.add_option('-f', action='store', type='int', default='10', help='frame per second (default 10)')
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 1:
+        p.print_help()
         return 0
-    lname    = os.listdir('.')
-    filename = args[0]
-    freq     = int(args[1])
-    if filename not in lname:
-        outbox_exist(filename)
-        return -1
+
+    src  = args[0]
+    freq = opt.f
+    if not check_name_file(src): return -1
     name, ext = filename.split('.')
     if ext != 'avi':
         outbox_error('Must be an avi file')
         return -1
-    if not check_overwrite(name): return -1
+    if not check_overwrite(name): return 0
     print 'Extract images...'
     pattern = '.tmp_astir_'
     try:
@@ -936,17 +933,16 @@ load_vid <video_name> <frame_per_second>
     mem.sort()
     for item in mem:
         im  = image_read(item)
-        mat = image_im2mat(im)
-        seq.append(mat)
+        seq.append(im)
         bar.update(i)
         i += 1
-    del im, mat
+    seq = array(seq)
     WORLD[name] = ['seq', seq]
-    del seq
     os.system('rm -f %s*' % pattern)
+    del im, seq, bar
     
     return 1
-
+"""
 def call_wiener(args):
     '''
 Image restoration by Wiener filter
