@@ -942,15 +942,22 @@ load_vid <video_name> <frame_per_second>
     del im, seq, bar
     
     return 1
-"""
+
 def call_wiener(args):
     '''
 Image restoration by Wiener filter.
 Restauration d image par filtre de Wiener
 wiener <mat_source_name> <mat_res_name>
     '''
-    if len(args) != 2:
-        print call_wiener.__doc__
+    usage = 'wiener <mat_source_name> <mat_res_name>'
+    prog  = 'wiener'
+    desc  = call_wiener.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 1:
+        p.print_help()
         return 0
     src   = args[0]
     trg   = args[1]
@@ -967,6 +974,7 @@ def call_mosaicing(args):
 Create mosaicing from two images
 mosaicing <mat_1> <mat_2>
     '''
+    ## TODO parser mosaicing
     mat1   = WORLD[args[0]][1]
     mat2   = WORLD[args[1]][1]
     ch     = len(mat1)
@@ -1007,8 +1015,10 @@ mosaicing <mat_1> <mat_2>
 
 def call_cut_seq(args):
     '''
-Cut a part of sequence to another sequence, start and stop
-specifies the part you want keep
+Cut a part of sequence to a new one, start and stop
+specifies the part you want keep. Coupe une partie d une 
+sequence dans une nouvelle, start et stop specifis la partie
+que vous voulez garder.
 
 cut_seq <seq_name> <start_num:stop_num> <new_seq_name>
 
@@ -1016,46 +1026,34 @@ cut_seq vid1 :24 vid2   # keep only first image to 24
 cut_seq vid1 10:24 vid2 # keep 10 to 24
 cut_seq vid1 :24 vid2   # keep 10 to last image
     '''
-
-    if len(args) != 3:
-        print call_cut_seq.__doc__
+    usage = 'cut_seq <seq_name> <new_seq_name> [option]\n\
+             cut_seq vid1 newvid -s 10 -e 34\n'
+    prog  = 'cut_seq'
+    desc  = call_cut_seq.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    p.add_option('-s', action='store', type='int', default='-1', help='Start number')
+    p.add_option('-e', action='store', type='int', default='-1', help='Stop number')
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 2:
+        p.print_help()
         return 0
-    src = args[0]
-    pos = args[1] 
-    trg = args[2]
+    src, trg = args
     if not check_name(src):      return -1
     if not check_seq(src):       return -1
     if not check_overwrite(trg): return  0
-    data = WORLD[src][1]
-    N    = len(data)
-    if len(pos) == 1:
-        outbox_error('Wrong argument: %s' % pos)
-        return -1
-    if   pos[0]  == ':':
-        start = 0
-        stop  = int(pos.split(':')[-1])
-    elif pos[-1] == ':':
-        start = int(pos.split(':')[0])
-        stop  = N - 1
-    else:
-        start = int(pos.split(':')[0])
-        stop  = int(pos.split(':')[-1])
-
-    if start < 0:
-        start = 0
-        outbox_bang('Start number must be > 0')
-    if stop  >= N:
-        stop  = N - 1
-        outbox_bang('Stop number must be < %i' % N)
-
+    if opt.s == -1: opt.s = 0
+    if opt.e == -1: opt.e = WORLD[src][1].shape[0]
     seq = []
-    for n in xrange(start, stop + 1):
-        seq.append(data[n])
+    for n in xrange(opt.s, opt.e + 1):
+        seq.append(WORLD[src][1][n])
+    seq = array(seq)
     WORLD[trg] = ['seq', seq]
-    del data
+    del seq
 
     return 1
-
+"""
 def call_licence(args):
     data = open('COPYING', 'r').readlines()
     for line in data: print line.strip('\n')
