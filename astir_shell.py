@@ -945,7 +945,8 @@ load_vid <video_name> <frame_per_second>
 """
 def call_wiener(args):
     '''
-Image restoration by Wiener filter
+Image restoration by Wiener filter.
+Restauration d image par filtre de Wiener
 wiener <mat_source_name> <mat_res_name>
     '''
     if len(args) != 2:
