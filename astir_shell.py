@@ -1118,118 +1118,120 @@ colormap im1 hot im_map
     WORLD[trg] = ['mat', res]
 
     return 1
-"""
+
 def call_add(args):
     '''
-Add two mat variables (L or RGB)
+Add two mat variables (L or RGB).
+Ajoute deux varaible mat (L ou RGB)
 mat_c = mat_a + mat_b
-add <mat_a> <mat_b> <mat_c>
-
-add im1 im2 res
     '''
+    usage = 'add <mat_a> <mat_b> <mat_c>\n\
+             add im1 im2 res\n'
+    prog  = 'add'
+    desc  = call_add.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) != 3:
-        print call_add.__doc__
+        p.print_help()
         return 0
-
-    src1  = args[0]
-    src2  = args[1]
-    trg   = args[2]
+    src1, src2, trg = args
     if not check_name([src1, src2]): return -1
     if not check_mat([src1, src2]):  return -1
     if not check_overwrite(trg):     return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
-    res  = []
-    for c in xrange(len(mat1)):
-        res.append(mat1[c] + mat2[c])
-
+    res  = mat1 + mat2
     WORLD[trg] = ['mat', res]
 
     return 1
 
 def call_sub(args):
     '''
-Substract two mat variables (L or RGB)
+Substract two mat variables (L or RGB).
+Soustract deux variables mat (L ou RGB)
 mat_c = mat_a - mat_b
-add <mat_a> <mat_b> <mat_c>
-
-add im1 im2 res
     '''
+    usage = 'sub <mat_a> <mat_b> <mat_c>\n\
+             sub im1 im2 res\n'
+    prog  = 'sub'
+    desc  = call_sub.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) != 3:
-        print call_sub.__doc__
+        p.print_help()
         return 0
-
-    src1  = args[0]
-    src2  = args[1]
-    trg   = args[2]
+    src1, src2, trg = args
     if not check_name([src1, src2]): return -1
     if not check_mat([src1, src2]):  return -1
     if not check_overwrite(trg):     return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
-    res  = []
-    for c in xrange(len(mat1)):
-        res.append(mat1[c] - mat2[c])
-
+    res  = mat1 - mat2
     WORLD[trg] = ['mat', res]
 
     return 1
 
 def call_mul(args):
     '''
-Multiply two mat variables (L or RGB)
+Multiply two mat variables (L or RGB). 
+Multiplie deux variables mat (L ou RGB)
 mat_c = mat_a * mat_b
-add <mat_a> <mat_b> <mat_c>
-
-add im1 im2 res
     '''
+    usage = 'mul <mat_a> <mat_b> <mat_c>\n\
+             mul im1 im2 res\n'
+    prog  = 'mul'
+    desc  = call_mul.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) != 3:
-        print call_mul.__doc__
+        p.print_help()
         return 0
-
-    src1  = args[0]
-    src2  = args[1]
-    trg   = args[2]
+    src1, src2, trg = args
     if not check_name([src1, src2]): return -1
     if not check_mat([src1, src2]):  return -1
     if not check_overwrite(trg):     return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
-    res  = []
-    for c in xrange(len(mat1)):
-        res.append(mat1[c] * mat2[c])
-
+    res  = mat1 * mat2
     WORLD[trg] = ['mat', res]
 
     return 1
 
 def call_div(args):
     '''
-Divide two mat variables (L or RGB)
+Divide two mat variables (L or RGB).
+Divise deux variables mat (L ou RGB)
 mat_c = mat_a / mat_b
-add <mat_a> <mat_b> <mat_c>
-
-add im1 im2 res
     '''
+    usage = 'div <mat_a> <mat_b> <mat_c>\n\
+             div im1 im2 res\n'
+    prog  = 'div'
+    desc  = call_div.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) != 3:
-        print call_div.__doc__
+        p.print_help()
         return 0
-    src1  = args[0]
-    src2  = args[1]
-    trg   = args[2]
+    src1, src2, trg = args
     if not check_name([src1, src2]): return -1
     if not check_mat([src1, src2]):  return -1
     if not check_overwrite(trg):     return 0
     mat1 = WORLD[src1][1]
     mat2 = WORLD[src2][1]
-    res  = []
-    for c in xrange(len(mat1)):
-        res.append(mat1[c] / mat2[c])
-
+    res  = mat1 / mat2
     WORLD[trg] = ['mat', res]
 
     return 1
 
+"""
 def call_info(args):
     '''
 Return information about the mat variable (size, stats, format, ...)
