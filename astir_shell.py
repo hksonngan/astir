@@ -1231,21 +1231,26 @@ mat_c = mat_a / mat_b
 
     return 1
 
-"""
 def call_info(args):
     '''
-Return information about the mat variable (size, stats, format, ...)
-info <mat_name>
-info im1
+Return informations about a variable (size, stats, format, ...).
+Retourne des informations a propos d une variable (taille, stats, format, ...)
     '''
+    ## TODO info on sequence
+    usage = 'info <mat_name>\n\
+             info mat1\n'
+    prog  = 'info'
+    desc  = call_info.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    try: opt, args = p.parse_args(args)
+    except: return 0
     if len(args) != 1:
-        print call_info.__doc__
+        p.print_help()
         return 0
-
     src   = args[0]
     if not check_name(src): return -1
     if not check_mat(src):  return -1
-
     mat = WORLD[src][1]
     c1, c2, c3  = G, B, Y
     print 'Name: %s%s%s Type: %s%s%s' % (c1, src, N, c1, 'mat', N)
@@ -1328,7 +1333,7 @@ print '# info'
 print call_info.__doc__
 sys.exit()
 '''
-"""
+
 #=== shell io ===================
 
 # script kernel
