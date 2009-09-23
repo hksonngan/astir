@@ -1019,12 +1019,6 @@ Cut a part of sequence to a new one, start and stop
 specifies the part you want keep. Coupe une partie d une 
 sequence dans une nouvelle, start et stop specifis la partie
 que vous voulez garder.
-
-cut_seq <seq_name> <start_num:stop_num> <new_seq_name>
-
-cut_seq vid1 :24 vid2   # keep only first image to 24
-cut_seq vid1 10:24 vid2 # keep 10 to 24
-cut_seq vid1 :24 vid2   # keep 10 to last image
     '''
     usage = 'cut_seq <seq_name> <new_seq_name> [option]\n\
              cut_seq vid1 newvid -s 10 -e 34\n'
@@ -1053,7 +1047,7 @@ cut_seq vid1 :24 vid2   # keep 10 to last image
     del seq
 
     return 1
-"""
+
 def call_licence(args):
     data = open('COPYING', 'r').readlines()
     for line in data: print line.strip('\n')
@@ -1062,28 +1056,37 @@ def call_licence(args):
 
 def call_anaglyph(args):
     '''
-Create an anaglyph image from two RGB matrix (right and left)
-anaglyph <mat_right> <mat_left> <new_mat_name>
+Create an anaglyph image from two RGB matrix (right and left).
+Creer une image anaglyphe depuis deux mat RGB (droite et gauche).
+
 anaglyph im1 im2 res
     '''
-    if len(args) != 3:
-        print call_anaglyph.__doc__
+
+    usage = 'anaglyph <mat_right> <mat_left> [options]\n\
+             anaglyph imr img -o newim\n'
+    prog  = 'anaglyph'
+    desc  = call_anaglyph.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    p.add_option('-o', action='store', type='string', default='res_anag', help='Output name (default res_anag)')
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 2:
+        p.print_help()
         return 0
-    src1  = args[0]
-    src2  = args[1]
-    trg = args[2]
+    src1, src2 = args
+    trg        = opt.o
     if not check_name([src1, src2]): return -1
     if not check_mat([src1, src2]):  return -1
     if not check_overwrite(trg):     return 0
-    # TODO create a function for that
-    if len(WORLD[src1][1]) != 3 or len(WORLD[src2][1]) != 3:
-        outbox_error('Only RGB mat variable can be used')
-        return -1
-    res = image_anaglyph(WORLD[src1][1], WORLD[src2][1])
+    im1, im2 = WORLD[src1][1], WORLD[src2][1]
+    if not check_RGB(im1): return -1
+    if not check_RGB(im2): return -1
+    res = image_anaglyph(im1, im2)
     WORLD[trg] = ['mat', res]
     
     return 1
-
+"""
 def call_colormap(args):
     '''
 Apply false-color to a luminance mat
