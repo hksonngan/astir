@@ -1026,8 +1026,8 @@ que vous voulez garder.
     desc  = call_cut_seq.__doc__
     p = OptionParser(description = desc, prog = prog, version = version)
     p.set_usage(usage)
-    p.add_option('-s', action='store', type='int', default='-1', help='Start number')
-    p.add_option('-e', action='store', type='int', default='-1', help='Stop number')
+    p.add_option('-s', action='store', type='int', default='-1', help='Start number (default 0)')
+    p.add_option('-e', action='store', type='int', default='-1', help='Stop number (default until the end)')
     try: opt, args = p.parse_args(args)
     except: return 0
     if len(args) != 2:
@@ -1058,10 +1058,7 @@ def call_anaglyph(args):
     '''
 Create an anaglyph image from two RGB matrix (right and left).
 Creer une image anaglyphe depuis deux mat RGB (droite et gauche).
-
-anaglyph im1 im2 res
     '''
-
     usage = 'anaglyph <mat_right> <mat_left> [options]\n\
              anaglyph imr img -o newim\n'
     prog  = 'anaglyph'
@@ -1086,36 +1083,42 @@ anaglyph im1 im2 res
     WORLD[trg] = ['mat', res]
     
     return 1
-"""
+
 def call_colormap(args):
     '''
-Apply false-color to a luminance mat
+Apply false-colors to a luminance mat.
+Applique des fausses couleurs sur une mat en luminance
 colormap <mat_name> <kind_of_map> <new_mat_name>
 different color of map: jet, hsv, hot
 
 colormap im1 hot im_map    
     '''
-    if len(args) != 3:
-        print call_colormap.__doc__
+    usage = 'colormap <mat_name> <new_name> [options]\n\
+             colormap im1 im1color -c jet'
+    prog  = 'colormap'
+    desc  = call_colormap.__doc__
+    p = OptionParser(description = desc, prog = prog, version = version)
+    p.set_usage(usage)
+    p.add_option('-c', action='store', type='string', default='jet', help='Kind of colormap jet, hsv and hot (default is jet)')
+    try: opt, args = p.parse_args(args)
+    except: return 0
+    if len(args) != 2:
+        p.print_help()
         return 0
-
-    src   = args[0]
-    kind  = args[1]
-    trg   = args[2]
+    src, trg = args
+    kind     = opt.c
     if not check_name(src):      return -1
     if not check_mat(src):       return -1
     if not check_overwrite(trg): return  0
+    if not check_L(src):         return -1
     if kind not in ['jet', 'hsv', 'hot']:
         outbox_error('Kind of map color unknown')
-        return -1
-    if WORLD[src][0] != 'mat' or len(WORLD[src][1]) != 1:
-        outbox_error('Only luminance mat varaible can be used')
         return -1
     res = color_colormap(WORLD[src][1], kind)
     WORLD[trg] = ['mat', res]
 
     return 1
-
+"""
 def call_add(args):
     '''
 Add two mat variables (L or RGB)
