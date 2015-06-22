@@ -1,0 +1,214 @@
+
+```
+[ls]
+Liste les variables dans l'espace de travail. Les variables de type
+[mat] sont des matrices (images) et les variables de type [seq] sont
+une sequence de [mat] (plusieurs images). La taille depend du type de
+la varaible aussi que sont format. Par exemple une [mat] de [640x480
+RGB] indique une matrice ou image de 640 colonnes et de 480 lignes en
+mode RGB, soit en couleur sur trois canaux. Ce qui implique que cette
+variable contient 3 matrices (R, G et B) de 640x480 elements. Autre
+exemple si une variable de type [seq] indique une dimension de [100
+mat 320x240 L], cela signifie qu'elle contient 100 matrices de 320x240
+elements en mode L (Luminance ou niveau de gris, soit un seul canal
+par image). 
+
+Exemple:
+% ls
+name      type      size
+v1        [mat]     [640x480 RGB]
+v2        [seq]     [100 mat 320x240 L]
+
+
+[ldir]
+Liste les fichiers dans le repertoire courant.
+
+[rm]
+Supprime une ou des variables dans l'espace de travail.
+
+Supprimer toutes les variables :
+% rm all    
+Supprimer variable im1 :
+% rm im1
+Supprimer une liste de variables, comme var1, var2 et var5 :
+% rm var1 var2 var5
+Supprimer une liste de variables qui ont le meme pattern (une partie
+du nom est le meme), en utilisant le joker *, par exemple ici toutes
+les variables qui ont un nom qui commence par var :
+% rm var*
+
+[mv]
+Deplace/renomme une variable.
+
+Renommer im00001 en im:
+% mv im00001 im
+
+[cp]
+Copie une variable pour une autre.
+
+Copie la varaible im1 en une autre variable im2:
+% cp im1 im2
+
+[mem]
+Cette fonction permet de faire un bilan de la memoire utiliser dans le
+shell par les variables.
+
+% mem
+var1      [mat]     18 kB
+vid1      [seq]     34 MB    
+    
+[fun]
+Liste l'ensemble des fonctions disponible dans Astir
+
+% fun
+    
+[save_var]
+Il est possible de sauvegarder une variable de l'espace de travail
+dans un fichier, afin de le reutiliser plus tard.
+
+Sauvegarder la variable im1 dans le fichier montravail.astir (vous
+pouvez choisir l'extension que vous voulez) :
+% save_var im1 montravail.astir
+
+[save_world]
+A l'identique que [save_var] vous pouvez sauvegarder l'ensemble des
+variables de l'espace de travail dans un unique fichier. Attention a
+la taille du fichier, faite une verification de l'espace de memoire
+utiliser par les variables avec [mem].
+
+Sauvegarde de tous l'espace de travail dans le fichier backup.astir :
+% save_world backup.astir
+
+[load_var]
+Charge une variable provenant d'un fichier. Par default le nom de la
+varaible est la meme que celle enregistrer, dans le cas ou une autre
+variable porte le meme nom Astir vous proposera, soit de renommer la
+variable, soit de l'ecraser. Voir egalement la fonction [save_var].   
+
+Charge le fichier montravail.astir :
+% load_var montravail.astir
+    
+[load_world]
+Charge l'espace de travail au complet, c'est-a-dire toutes les
+variables enregistrees precedement par la fonction [load_world].
+
+Charge l'espace de travail backup.astir:
+% load_world backup.astir
+    
+[load_im]
+Charge une image ou des images provenant d'un fichier ou des fichiers
+aux format BMP, PNG et JPG uniquement. Dans le cas ou une seul image
+est chargee elle sera enregistrer dans une variable de type [mat] dans
+l'espace de travail de Astir. Maintenant si vous chargez un ensemble
+d'image via un pattern (joker *), toutes les images seront
+enregistrees comme une sequence d'image dans une meme varaible de type
+[seq]. Note, le nom de la variable dans l'espace de travail sera le
+meme que le nom du fichier de l'image ou de la premiere image, sans
+l'extension. 
+
+Charger l'image im1.png dans la variable [mat] im1 :
+% load_im im1.png
+Charge une sequence d'image im000.png, im001.png, im002.png, ... dans
+la variable [seq] im000 :
+% load_im im*.png
+    
+[save_im]
+A linverse de [load_im] il est possible egalement d'exporter une
+variable en une image dans un format de type BMP, PNG ou JPG. Seule
+les variables de type [mat] peuvent etre enregistrees.
+
+Exporte la variable [mat] im1 dans le fichier image image.png :
+% save_im im1 image.png
+    
+[show_mat]
+Affiche une variable de type [mat] en image.
+
+Affiche l'image de type [mat] im1 :
+% show_mat im1
+Affiche la meme image mais avec une grille espacee de 10 pixels :
+% show_mat im1 g10
+    
+[color2gray]
+Conversion d'une variable ([mat] ou [seq]) en mode RGB (Red, Green and
+Blue) ou en RGBA (Alpha pour la transparence des fichier PNG), en
+luminance ou niveau de gris (mode L).
+
+Conversion d'une [mat] im1 sur-place (dans la meme variable) :
+% color2gray im1
+La meme chose mais la conversion est sauvegardee dans une autre
+variable [mat] im1_nocolor :
+% color2gray im1 im1_nocolor
+Il est possible de le faire pour toutes les images d'une variable de
+type [seq] vid1 sur-place :
+% color2gray vid1
+La meme chose dans une autre variable [seq] vid1_nocolor :
+% color2gray vid1 vid1_nocolor
+    
+[seq2mat]
+Cette fonction permet d'extraire une matrice [mat] d'une sequence de
+type [seq]. Le nom de la variable de type [mat] sera automatiquement
+formate en fonction du nom de base donne par l'utilisateur. Par
+exemple sur le nom de base est im, la dixieme matrice extraite d'une
+sequence sera nommee im010 (l'index est formatte avec 000).
+
+Extract la matrice im10 de la sequence vid1 :
+% seq2mat vid1 10 im
+Extract les matrices im002, im003 et im004 depuis la sequence vid1 :
+% seq2mat vid1 2:4 im
+Extract la totalite des matrices provenant de la sequence vid1 :
+% seq2mat vid1 all im
+    
+[seq_reg_ave]
+Cette fonction permet de calculer la moyenne d'un ensemble de matrices
+en les recallants une a une. Elle ne s'applique qu'au sequence de
+matrice de type [seq]. Pour chaque paires voisine des matrices de la
+sequence (im00, im01), (im01, im02), ... la fonction va determiner le
+recallage, qui est le decallage en translation inter-image. Au moment de
+calculer la moyenne global, la fonction va prendre en compte le
+decallage de chaque image. L'objectif etant de diminuer le bruit d'un
+sujet dans une serie d'images quand celui est mobile. Typiquement
+amelioration d'image planetaire et autre par le biai d'une acquisition
+video de l'objet observe. La sequence [seq] doit etre imperativement
+en niveau de gris, soit le mode L (Luminance) dans Astir. La methode
+employe est un alignment libre en translation pure, avec un
+criter de similiarite donne par la distance Euclidienne sous un masque
+carre.  
+
+Les parametres de la fonction sont en premier lieu le nom de la
+variable de type [seq]. Ensuite ce sont les parametres de la recherche
+pour le recallage entre les images en pixels. Ne pas mettre une
+recherche trop grande pour eviter un temp de calcul important. En
+astronomie le mouvement de l'objet entre chaque image ne depassera pas
+5 pixels. Le dernier parametre est la fenetre de recherche, pour
+recaller les images on utilise pas toute la surface de l'image, on se
+centre uniquement la ou est l'objet. Toujours choisir une taille de
+fenetre impaire, sinon son centre n'est pas un entier or une image est
+composee de pixel.
+
+seq_reg_ave <seq_name> <dx> <dy> <ws>
+
+dx: la translation du champ de recherche sur l'axe des x (debute a x-dx jusqu'a x+dx)
+dy: la translation du champ de recherche sur l'axe des y (debute a y-dy jusqu'a y+dy)
+ws: taille de la fenetre utilise pour suivre le deplacement entre les
+images (doit etre impaire)
+
+Pour choisir la position de la fenetre, Astir va afficher la premiere,
+vous allez cliquer a l'aide de la souris sur l'endroit desire de la
+suivie. A ce moment Astir va afficher de nouveau l'image avec la
+position de la fenetre choisie. Le programme commence au moment ou
+vous fermez la fenetre. Exemple avec une recherche de 5 pixels autour
+d'un point avec une fenetre carre de 35 pixels.
+
+% seq_reg_ave vid1 5 5 35
+    
+[load_vid]
+Charge une sequence en memoire a partir d'une video (seulement les
+fichiers avi)
+
+load_vid <video_name> <frame_per_second>
+    
+Exemple avec la video saturne avec un nombre d'image par seconde de
+10:
+
+% load_vid saturne.avi 10
+```

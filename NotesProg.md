@@ -1,0 +1,1 @@
+everything is [here](http://wiki.astir.googlecode.com/hg/notes/index.html)
